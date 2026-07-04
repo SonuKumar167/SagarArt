@@ -1,0 +1,108 @@
+<?php
+require '../includes/config.php';
+
+if (!isAdminLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$settings = getSiteSettings($conn);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $site_name = trim($_POST['site_name'] ?? 'Sagar Art');
+    $tagline = trim($_POST['tagline'] ?? '');
+    $header_text = trim($_POST['header_text'] ?? '');
+    $header_cta_text = trim($_POST['header_cta_text'] ?? '');
+    $header_cta_link = trim($_POST['header_cta_link'] ?? '');
+    $footer_about = trim($_POST['footer_about'] ?? '');
+    $footer_email = trim($_POST['footer_email'] ?? '');
+    $footer_phone = trim($_POST['footer_phone'] ?? '');
+    $footer_address = trim($_POST['footer_address'] ?? '');
+    $footer_copyright = trim($_POST['footer_copyright'] ?? '');
+
+    $stmt = $conn->prepare('INSERT INTO site_settings (site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->bind_param('ssssssssss', $site_name, $tagline, $header_text, $header_cta_text, $header_cta_link, $footer_about, $footer_email, $footer_phone, $footer_address, $footer_copyright);
+    $stmt->execute();
+    $settings = ['site_name' => $site_name, 'tagline' => $tagline, 'header_text' => $header_text, 'header_cta_text' => $header_cta_text, 'header_cta_link' => $header_cta_link, 'footer_about' => $footer_about, 'footer_email' => $footer_email, 'footer_phone' => $footer_phone, 'footer_address' => $footer_address, 'footer_copyright' => $footer_copyright];
+    $success = 'Settings updated successfully.';
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Settings</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <?php include 'includes/sidebar.php'; ?>
+    <main class="admin-main">
+      <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h3 class="fw-bold mb-1">Header & Footer Content</h3>
+            <p class="text-muted mb-0">Update the branding, hero call-to-action and footer details.</p>
+          </div>
+          <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
+        </div>
+        <div class="card admin-card">
+          <div class="card-body">
+            <?php if (!empty($success)): ?>
+              <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+            <?php endif; ?>
+            <form method="post">
+              <div class="mb-3">
+                <label class="form-label">Site Name</label>
+                <input type="text" name="site_name" class="form-control" value="<?php echo htmlspecialchars($settings['site_name'] ?? 'Sagar Art'); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Tagline</label>
+                <input type="text" name="tagline" class="form-control" value="<?php echo htmlspecialchars($settings['tagline'] ?? ''); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Header Text</label>
+                <textarea name="header_text" class="form-control" rows="3"><?php echo htmlspecialchars($settings['header_text'] ?? ''); ?></textarea>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Header CTA Text</label>
+                  <input type="text" name="header_cta_text" class="form-control" value="<?php echo htmlspecialchars($settings['header_cta_text'] ?? ''); ?>">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Header CTA Link</label>
+                  <input type="text" name="header_cta_link" class="form-control" value="<?php echo htmlspecialchars($settings['header_cta_link'] ?? ''); ?>">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer About</label>
+                <textarea name="footer_about" class="form-control" rows="3"><?php echo htmlspecialchars($settings['footer_about'] ?? ''); ?></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer Email</label>
+                <input type="email" name="footer_email" class="form-control" value="<?php echo htmlspecialchars($settings['footer_email'] ?? ''); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer Phone</label>
+                <input type="text" name="footer_phone" class="form-control" value="<?php echo htmlspecialchars($settings['footer_phone'] ?? ''); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer Address</label>
+                <textarea name="footer_address" class="form-control" rows="2"><?php echo htmlspecialchars($settings['footer_address'] ?? ''); ?></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer Copyright</label>
+                <input type="text" name="footer_copyright" class="form-control" value="<?php echo htmlspecialchars($settings['footer_copyright'] ?? ''); ?>">
+              </div>
+              <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
+<?php $conn->close(); ?>

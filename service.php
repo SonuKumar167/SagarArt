@@ -29,8 +29,17 @@ if (!$service) {
 
   <section class="py-5">
     <div class="container">
-      <p><?php echo nl2br(htmlspecialchars($service['content'])); ?></p>
-      <a href="services.php" class="btn btn-outline-primary mt-3">Back to Services</a>
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+          <p><?php echo nl2br(htmlspecialchars($service['content'])); ?></p>
+          <a href="services.php" class="btn btn-outline-primary mt-3">Back to Services</a>
+        </div>
+        <?php if (!empty($service['image_url'])): ?>
+          <div class="col-lg-5">
+            <img src="<?php echo htmlspecialchars($service['image_url']); ?>" alt="<?php echo htmlspecialchars($service['title']); ?>" class="img-fluid rounded shadow">
+          </div>
+        <?php endif; ?>
+      </div>
     </div>
   </section>
 
