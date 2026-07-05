@@ -94,13 +94,17 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
             <p class="text-muted mb-0">Create, update and manage your pages.</p>
           </div>
           <div class="d-flex gap-2">
-            <a href="page_form.php?new=1" class="btn btn-primary">Add New Page</a>
+            <?php if ($showForm): ?>
+              <a href="page_form.php" class="btn btn-outline-secondary">Back to list</a>
+            <?php else: ?>
+              <a href="page_form.php?new=1" class="btn btn-primary">Add New Page</a>
+            <?php endif; ?>
             <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
           </div>
         </div>
         <?php if ($showForm): ?>
         <div class="row g-4">
-          <div class="col-lg-7">
+          <div class="col-12">
             <div class="card admin-card">
               <div class="card-body">
                 <h4 class="mb-3"><?php echo $slug ? 'Edit Page' : 'Create New Page'; ?></h4>
@@ -167,7 +171,7 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
             </div>
           </div>
         </div>
-        <?php endif; ?>
+        <?php else: ?>
         <div class="row g-4">
           <div class="col-12">
             <div class="card admin-card">
@@ -191,6 +195,8 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
                             <td><?php echo !empty($row['show_in_menu']) ? '<span class="badge bg-success">Visible</span>' : '<span class="badge bg-secondary">Hidden</span>'; ?></td>
                             <td class="text-end">
                               <div class="btn-group btn-group-sm" role="group">
+                                <?php $viewPath = $row['slug'] === 'home' ? 'index.php' : 'page.php?slug=' . urlencode($row['slug']); ?>
+                                <a href="../<?php echo htmlspecialchars($viewPath); ?>" class="btn btn-outline-info" target="_blank" rel="noopener noreferrer">View</a>
                                 <a href="page_form.php?slug=<?php echo urlencode($row['slug']); ?>" class="btn btn-outline-primary">Edit</a>
                                 <a href="page_form.php?delete=<?php echo urlencode($row['slug']); ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this page?');">Delete</a>
                               </div>
@@ -207,9 +213,11 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
             </div>
           </div>
         </div>
+        <?php endif; ?>
       </div>
     </main>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 <?php $conn->close(); ?>

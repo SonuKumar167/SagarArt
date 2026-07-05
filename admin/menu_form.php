@@ -235,7 +235,7 @@ if ($item) {
                               $pageOptions = $conn->query('SELECT slug, title FROM pages ORDER BY menu_order ASC, id ASC');
                               if ($pageOptions && $pageOptions->num_rows > 0):
                                   while ($pageOption = $pageOptions->fetch_assoc()):
-                                      $pageLink = $pageOption['slug'] . '.php';
+                                      $pageLink = 'page.php?slug=' . $pageOption['slug'];
                                       // Skip if already in submenu
                                       if (in_array($pageLink, $existingLinks)) {
                                           continue;
