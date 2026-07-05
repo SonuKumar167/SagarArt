@@ -3,7 +3,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $navItems = [
     ['label' => 'Dashboard', 'url' => 'dashboard.php'],
     ['label' => 'Pages', 'url' => 'page_form.php'],
-    ['label' => 'Services', 'url' => 'service_form.php'],
+    ['label' => 'Services', 'url' => 'services.php'],
     ['label' => 'Menus', 'url' => 'menu_form.php'],
     ['label' => 'Analytics', 'url' => 'analytics.php'],
     ['label' => 'Header & Footer', 'url' => 'settings_form.php'],

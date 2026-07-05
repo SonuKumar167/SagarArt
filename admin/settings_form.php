@@ -19,11 +19,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $footer_phone = trim($_POST['footer_phone'] ?? '');
     $footer_address = trim($_POST['footer_address'] ?? '');
     $footer_copyright = trim($_POST['footer_copyright'] ?? '');
+    $meta_title = trim($_POST['meta_title'] ?? '');
+    $meta_description = trim($_POST['meta_description'] ?? '');
+    $facebook_url = trim($_POST['facebook_url'] ?? '');
+    $instagram_url = trim($_POST['instagram_url'] ?? '');
+    $twitter_url = trim($_POST['twitter_url'] ?? '');
+    $youtube_url = trim($_POST['youtube_url'] ?? '');
 
-    $stmt = $conn->prepare('INSERT INTO site_settings (site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    $stmt->bind_param('ssssssssss', $site_name, $tagline, $header_text, $header_cta_text, $header_cta_link, $footer_about, $footer_email, $footer_phone, $footer_address, $footer_copyright);
+    $favicon_url = trim($_POST['existing_favicon_url'] ?? '');
+    if (!empty($_FILES['favicon']['tmp_name'])) {
+        $uploadedFavicon = uploadFile($_FILES['favicon']);
+        if ($uploadedFavicon !== '') {
+            $favicon_url = $uploadedFavicon;
+        }
+    }
+
+    $logo_url = trim($_POST['existing_logo_url'] ?? '');
+    if (!empty($_FILES['logo']['tmp_name'])) {
+        $uploadedLogo = uploadFile($_FILES['logo']);
+        if ($uploadedLogo !== '') {
+            $logo_url = $uploadedLogo;
+        }
+    }
+
+    $params = [$site_name, $tagline, $header_text, $header_cta_text, $header_cta_link, $footer_about, $footer_email, $footer_phone, $footer_address, $footer_copyright, $favicon_url, $logo_url, $meta_title, $meta_description, $facebook_url, $instagram_url, $twitter_url, $youtube_url];
+    $types = str_repeat('s', count($params));
+    $stmt = $conn->prepare('INSERT INTO site_settings (site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright, favicon_url, logo_url, meta_title, meta_description, facebook_url, instagram_url, twitter_url, youtube_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    $settings = ['site_name' => $site_name, 'tagline' => $tagline, 'header_text' => $header_text, 'header_cta_text' => $header_cta_text, 'header_cta_link' => $header_cta_link, 'footer_about' => $footer_about, 'footer_email' => $footer_email, 'footer_phone' => $footer_phone, 'footer_address' => $footer_address, 'footer_copyright' => $footer_copyright];
+    $settings = ['site_name' => $site_name, 'tagline' => $tagline, 'header_text' => $header_text, 'header_cta_text' => $header_cta_text, 'header_cta_link' => $header_cta_link, 'footer_about' => $footer_about, 'footer_email' => $footer_email, 'footer_phone' => $footer_phone, 'footer_address' => $footer_address, 'footer_copyright' => $footer_copyright, 'favicon_url' => $favicon_url, 'logo_url' => $logo_url, 'meta_title' => $meta_title, 'meta_description' => $meta_description, 'facebook_url' => $facebook_url, 'instagram_url' => $instagram_url, 'twitter_url' => $twitter_url, 'youtube_url' => $youtube_url];
     $success = 'Settings updated successfully.';
 }
 ?>
@@ -53,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (!empty($success)): ?>
               <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
               <div class="mb-3">
                 <label class="form-label">Site Name</label>
                 <input type="text" name="site_name" class="form-control" value="<?php echo htmlspecialchars($settings['site_name'] ?? 'Sagar Art'); ?>">
@@ -74,6 +98,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Header CTA Link</label>
                   <input type="text" name="header_cta_link" class="form-control" value="<?php echo htmlspecialchars($settings['header_cta_link'] ?? ''); ?>">
+                </div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Favicon</label>
+                  <input type="file" name="favicon" class="form-control">
+                  <?php if (!empty($settings['favicon_url'])): ?><small class="text-muted d-block mt-2">Current: <a href="../<?php echo htmlspecialchars($settings['favicon_url']); ?>" target="_blank">View file</a></small><?php endif; ?>
+                  <input type="hidden" name="existing_favicon_url" value="<?php echo htmlspecialchars($settings['favicon_url'] ?? ''); ?>">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Logo</label>
+                  <input type="file" name="logo" class="form-control">
+                  <?php if (!empty($settings['logo_url'])): ?><small class="text-muted d-block mt-2">Current: <a href="../<?php echo htmlspecialchars($settings['logo_url']); ?>" target="_blank">View file</a></small><?php endif; ?>
+                  <input type="hidden" name="existing_logo_url" value="<?php echo htmlspecialchars($settings['logo_url'] ?? ''); ?>">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Meta Title</label>
+                <input type="text" name="meta_title" class="form-control" value="<?php echo htmlspecialchars($settings['meta_title'] ?? ''); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Meta Description</label>
+                <textarea name="meta_description" class="form-control" rows="3"><?php echo htmlspecialchars($settings['meta_description'] ?? ''); ?></textarea>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Facebook URL</label>
+                  <input type="url" name="facebook_url" class="form-control" value="<?php echo htmlspecialchars($settings['facebook_url'] ?? ''); ?>">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Instagram URL</label>
+                  <input type="url" name="instagram_url" class="form-control" value="<?php echo htmlspecialchars($settings['instagram_url'] ?? ''); ?>">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Twitter URL</label>
+                  <input type="url" name="twitter_url" class="form-control" value="<?php echo htmlspecialchars($settings['twitter_url'] ?? ''); ?>">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">YouTube URL</label>
+                  <input type="url" name="youtube_url" class="form-control" value="<?php echo htmlspecialchars($settings['youtube_url'] ?? ''); ?>">
                 </div>
               </div>
               <div class="mb-3">

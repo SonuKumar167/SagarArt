@@ -4,7 +4,12 @@ $headerMenuItems = getHeaderMenuItems($conn);
 ?>
 <nav class="navbar navbar-expand-lg sticky-top">
   <div class="container">
-    <a class="navbar-brand fw-bold" href="index.php"><?php echo htmlspecialchars($siteSettings['site_name'] ?? 'Sagar Art'); ?></a>
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.php">
+      <?php if (!empty($siteSettings['logo_url'])): ?>
+        <img src="<?php echo htmlspecialchars($siteSettings['logo_url']); ?>" alt="<?php echo htmlspecialchars($siteSettings['site_name'] ?? 'Sagar Art'); ?>" style="height: 40px; width: auto;">
+      <?php endif; ?>
+      <span><?php echo htmlspecialchars($siteSettings['site_name'] ?? 'Sagar Art'); ?></span>
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>

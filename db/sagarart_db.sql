@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 04, 2026 at 12:18 PM
+-- Generation Time: Jul 05, 2026 at 08:35 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -38,7 +38,7 @@ CREATE TABLE `admin_users` (
 --
 
 INSERT INTO `admin_users` (`id`, `username`, `password_hash`) VALUES
-(1, 'admin', '$2y$10$8OsC3P.QBLG.gNr4QtDxUOkwiI6YKBGXvI4aX/1pNm4VUgUxY1McC');
+(1, 'admin', '$2y$10$pNg.CWr8h8T9APquiLxax.xwz0PcpRbfxOexJaG7jyyIbuOTd81Ri');
 
 -- --------------------------------------------------------
 
@@ -54,6 +54,13 @@ CREATE TABLE `contact_submissions` (
   `message` text NOT NULL,
   `submitted_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `contact_submissions`
+--
+
+INSERT INTO `contact_submissions` (`id`, `name`, `email`, `phone`, `message`, `submitted_at`) VALUES
+(1, 'sonu prakash', 'sonuprakash167@gmail.com', '+917239907130', 'need wall mount wallpaper with high resolution', '2026-07-05 12:04:08');
 
 -- --------------------------------------------------------
 
@@ -75,7 +82,8 @@ CREATE TABLE `menu_children` (
 --
 
 INSERT INTO `menu_children` (`id`, `parent_id`, `label`, `link`, `menu_order`, `is_active`) VALUES
-(1, 3, 'Web Design', 'service.php?slug=web-design', 0, 1);
+(1, 3, 'Web Design', 'service.php?slug=web-design', 0, 1),
+(2, 3, 'Web Development', 'service.php?slug=web-development', 0, 1);
 
 -- --------------------------------------------------------
 
@@ -180,7 +188,7 @@ CREATE TABLE `services` (
 --
 
 INSERT INTO `services` (`id`, `title`, `slug`, `summary`, `content`, `image_url`, `display_order`, `is_featured`) VALUES
-(1, 'Web Design', 'web-design', 'Beautiful and modern interfaces for your brand.', 'We design responsive websites that feel premium and work perfectly across all devices.', NULL, 0, 0),
+(1, 'Web Design', 'web-design', 'Beautiful and modern interfaces for your brand.', 'We design responsive websites that feel premium and work perfectly across all devices.', '', 1, 0),
 (2, 'Web Development', 'web-development', 'Reliable PHP and MySQL-based applications.', 'We develop custom PHP applications with fast load times and clean architecture.', NULL, 0, 0),
 (3, 'SEO Optimization', 'seo-optimization', 'Boost your online visibility and organic traffic.', 'We improve your website structure, content, and metadata to rank higher in search results.', NULL, 0, 0),
 (4, 'Brand Strategy', 'brand-strategy', 'Create a strong message and identity for your business.', 'We help shape your brand voice, positioning, and visual identity for lasting growth.', NULL, 0, 0),
@@ -203,15 +211,24 @@ CREATE TABLE `site_settings` (
   `footer_copyright` varchar(255) DEFAULT NULL,
   `header_text` text DEFAULT NULL,
   `header_cta_text` varchar(255) DEFAULT NULL,
-  `header_cta_link` varchar(255) DEFAULT NULL
+  `header_cta_link` varchar(255) DEFAULT NULL,
+  `favicon_url` varchar(255) DEFAULT NULL,
+  `logo_url` varchar(255) DEFAULT NULL,
+  `meta_title` varchar(255) DEFAULT NULL,
+  `meta_description` text DEFAULT NULL,
+  `facebook_url` varchar(255) DEFAULT NULL,
+  `instagram_url` varchar(255) DEFAULT NULL,
+  `twitter_url` varchar(255) DEFAULT NULL,
+  `youtube_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `site_settings`
 --
 
-INSERT INTO `site_settings` (`id`, `site_name`, `tagline`, `footer_about`, `footer_email`, `footer_phone`, `footer_address`, `footer_copyright`, `header_text`, `header_cta_text`, `header_cta_link`) VALUES
-(1, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php');
+INSERT INTO `site_settings` (`id`, `site_name`, `tagline`, `footer_about`, `footer_email`, `footer_phone`, `footer_address`, `footer_copyright`, `header_text`, `header_cta_text`, `header_cta_link`, `favicon_url`, `logo_url`, `meta_title`, `meta_description`, `facebook_url`, `instagram_url`, `twitter_url`, `youtube_url`) VALUES
+(1, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php', NULL, NULL, 'Sagar Art | Creative Digital Agency', 'We design and develop modern websites and digital experiences for brands that want to stand out.', 'https://facebook.com', 'https://instagram.com', 'https://twitter.com', 'https://youtube.com'),
+(2, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php', '', '', 'Sagar Art | Creative Digital Agency', 'We design and develop modern websites and digital experiences for brands that want to stand out.', 'https://facebook.com', 'https://instagram.com', 'https://twitter.com', 'https://youtube.com');
 
 --
 -- Indexes for dumped tables
@@ -277,19 +294,19 @@ ALTER TABLE `site_settings`
 -- AUTO_INCREMENT for table `admin_users`
 --
 ALTER TABLE `admin_users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=241;
 
 --
 -- AUTO_INCREMENT for table `contact_submissions`
 --
 ALTER TABLE `contact_submissions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `menu_children`
 --
 ALTER TABLE `menu_children`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `menu_items`
@@ -301,7 +318,7 @@ ALTER TABLE `menu_items`
 -- AUTO_INCREMENT for table `pages`
 --
 ALTER TABLE `pages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=418;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=955;
 
 --
 -- AUTO_INCREMENT for table `page_sections`
@@ -313,13 +330,13 @@ ALTER TABLE `page_sections`
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=419;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=956;
 
 --
 -- AUTO_INCREMENT for table `site_settings`
 --
 ALTER TABLE `site_settings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables

@@ -1,19 +1,25 @@
 <?php
 require 'includes/config.php';
 
+$siteSettings = getSiteSettings($conn);
 $slug = isset($_GET['slug']) ? $_GET['slug'] : '';
 $service = getServiceBySlug($conn, $slug);
 if (!$service) {
     header('Location: services.php');
     exit;
 }
+$pageTitle = !empty($siteSettings['meta_title']) ? $siteSettings['meta_title'] : (($service['title'] ?? 'Service') . ' - ' . ($siteSettings['site_name'] ?? 'Sagar Art'));
+$pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['meta_description'] : substr(strip_tags($service['content'] ?? ''), 0, 160);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?php echo htmlspecialchars($service['title']); ?> - Sagar Art</title>
+  <title><?php echo htmlspecialchars($pageTitle); ?></title>
+  <meta name="description" content="<?php echo htmlspecialchars($pageDescription); ?>">
+  <?php if (!empty($siteSettings['favicon_url'])): ?><link rel="icon" href="<?php echo htmlspecialchars($siteSettings['favicon_url']); ?>">
+  <?php endif; ?>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>

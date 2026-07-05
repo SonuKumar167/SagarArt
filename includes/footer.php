@@ -35,6 +35,23 @@ $footerLinks = getHeaderMenuItems($conn);
         <p class="mb-2"><strong>Email:</strong> <?php echo htmlspecialchars($siteSettings['footer_email'] ?? ''); ?></p>
         <p class="mb-2"><strong>Phone:</strong> <?php echo htmlspecialchars($siteSettings['footer_phone'] ?? ''); ?></p>
         <p class="mb-0"><strong>Address:</strong> <?php echo htmlspecialchars($siteSettings['footer_address'] ?? ''); ?></p>
+        <?php $socialLinks = [
+          ['label' => 'Facebook', 'url' => $siteSettings['facebook_url'] ?? ''],
+          ['label' => 'Instagram', 'url' => $siteSettings['instagram_url'] ?? ''],
+          ['label' => 'Twitter', 'url' => $siteSettings['twitter_url'] ?? ''],
+          ['label' => 'YouTube', 'url' => $siteSettings['youtube_url'] ?? '']
+        ]; ?>
+        <?php $activeSocialLinks = array_filter($socialLinks, static function ($link) { return !empty($link['url']); }); ?>
+        <?php if (!empty($activeSocialLinks)): ?>
+          <div class="mt-3">
+            <h6 class="text-white">Follow us</h6>
+            <div class="d-flex flex-wrap gap-2">
+              <?php foreach ($activeSocialLinks as $socialLink): ?>
+                <a href="<?php echo htmlspecialchars($socialLink['url']); ?>" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-light"><?php echo htmlspecialchars($socialLink['label']); ?></a>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>

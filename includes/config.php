@@ -51,7 +51,15 @@ $conn->query("CREATE TABLE IF NOT EXISTS `site_settings` (
   `footer_email` VARCHAR(255) DEFAULT NULL,
   `footer_phone` VARCHAR(255) DEFAULT NULL,
   `footer_address` TEXT DEFAULT NULL,
-  `footer_copyright` VARCHAR(255) DEFAULT NULL
+  `footer_copyright` VARCHAR(255) DEFAULT NULL,
+  `favicon_url` VARCHAR(255) DEFAULT NULL,
+  `logo_url` VARCHAR(255) DEFAULT NULL,
+  `meta_title` VARCHAR(255) DEFAULT NULL,
+  `meta_description` TEXT DEFAULT NULL,
+  `facebook_url` VARCHAR(255) DEFAULT NULL,
+  `instagram_url` VARCHAR(255) DEFAULT NULL,
+  `twitter_url` VARCHAR(255) DEFAULT NULL,
+  `youtube_url` VARCHAR(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 $conn->query("CREATE TABLE IF NOT EXISTS `page_sections` (
@@ -118,6 +126,14 @@ addColumnIfMissing($conn, 'menu_items', 'has_dropdown', 'TINYINT(1) NOT NULL DEF
 addColumnIfMissing($conn, 'site_settings', 'header_text', 'TEXT DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'header_cta_text', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'header_cta_link', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'favicon_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'logo_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'meta_title', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'meta_description', 'TEXT DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'facebook_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'instagram_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'twitter_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'youtube_url', 'VARCHAR(255) DEFAULT NULL');
 
 $adminPasswordHash = password_hash('admin123', PASSWORD_DEFAULT);
 $conn->query("INSERT INTO `admin_users` (username, password_hash) VALUES ('admin', '$adminPasswordHash') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)");
@@ -133,7 +149,7 @@ $conn->query("INSERT INTO `services` (title, slug, summary, content) VALUES
   ('SEO Optimization', 'seo-optimization', 'Boost your online visibility and organic traffic.', 'We improve your website structure, content, and metadata to rank higher in search results.'),
   ('Brand Strategy', 'brand-strategy', 'Create a strong message and identity for your business.', 'We help shape your brand voice, positioning, and visual identity for lasting growth.')
   ON DUPLICATE KEY UPDATE title = VALUES(title)");
-$conn->query("INSERT INTO `site_settings` (id, site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright) VALUES (1, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.') ON DUPLICATE KEY UPDATE site_name = VALUES(site_name), tagline = VALUES(tagline), header_text = VALUES(header_text), header_cta_text = VALUES(header_cta_text), header_cta_link = VALUES(header_cta_link), footer_about = VALUES(footer_about), footer_email = VALUES(footer_email), footer_phone = VALUES(footer_phone), footer_address = VALUES(footer_address), footer_copyright = VALUES(footer_copyright)");
+$conn->query("INSERT INTO `site_settings` (id, site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright, favicon_url, logo_url, meta_title, meta_description, facebook_url, instagram_url, twitter_url, youtube_url) VALUES (1, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.', NULL, NULL, 'Sagar Art | Creative Digital Agency', 'We design and develop modern websites and digital experiences for brands that want to stand out.', 'https://facebook.com', 'https://instagram.com', 'https://twitter.com', 'https://youtube.com') ON DUPLICATE KEY UPDATE site_name = VALUES(site_name), tagline = VALUES(tagline), header_text = VALUES(header_text), header_cta_text = VALUES(header_cta_text), header_cta_link = VALUES(header_cta_link), footer_about = VALUES(footer_about), footer_email = VALUES(footer_email), footer_phone = VALUES(footer_phone), footer_address = VALUES(footer_address), footer_copyright = VALUES(footer_copyright), favicon_url = VALUES(favicon_url), logo_url = VALUES(logo_url), meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), facebook_url = VALUES(facebook_url), instagram_url = VALUES(instagram_url), twitter_url = VALUES(twitter_url), youtube_url = VALUES(youtube_url)");
 
 function slugify($text) {
     $text = strtolower(trim($text));
@@ -203,8 +219,7 @@ function getPageSections($conn, $slug) {
 function getSiteSettings($conn) {
     $result = $conn->query('SELECT * FROM site_settings ORDER BY id DESC LIMIT 1');
     $settings = $result ? $result->fetch_assoc() : [];
-
-    return $settings ?: [
+    $defaults = [
         'site_name' => 'Sagar Art',
         'tagline' => 'Creative digital experiences that elevate brands.',
         'header_text' => 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.',
@@ -214,8 +229,28 @@ function getSiteSettings($conn) {
         'footer_email' => 'hello@sagarart.com',
         'footer_phone' => '+91 98765 43210',
         'footer_address' => 'Mumbai, India',
-        'footer_copyright' => '© 2026 Sagar Art. All rights reserved.'
+        'footer_copyright' => '© 2026 Sagar Art. All rights reserved.',
+        'favicon_url' => '',
+        'logo_url' => '',
+        'meta_title' => '',
+        'meta_description' => '',
+        'facebook_url' => '',
+        'instagram_url' => '',
+        'twitter_url' => '',
+        'youtube_url' => ''
     ];
+
+    if (!$settings) {
+        return $defaults;
+    }
+
+    foreach ($defaults as $key => $value) {
+        if (!array_key_exists($key, $settings)) {
+            $settings[$key] = $value;
+        }
+    }
+
+    return $settings;
 }
 
 function getServices($conn) {

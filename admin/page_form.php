@@ -18,6 +18,7 @@ if ($deleteSlug !== '') {
 }
 
 $page = null;
+$showForm = isset($_GET['new']) || $slug !== '';
 if ($slug !== '') {
     $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_video_url, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
     $stmt->bind_param('s', $slug);
@@ -30,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $content = trim($_POST['content'] ?? '');
     $hero_title = trim($_POST['hero_title'] ?? '');
     $hero_text = trim($_POST['hero_text'] ?? '');
-    $hero_video_url = trim($_POST['hero_video_url'] ?? '');
+    $hero_video_url = trim($_POST['existing_hero_video_url'] ?? '');
     $image_url = trim($_POST['image_url'] ?? '');
     $show_in_menu = isset($_POST['show_in_menu']) ? 1 : 0;
     $menu_order = (int)($_POST['menu_order'] ?? 0);
@@ -45,6 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uploadedImage = uploadFile($_FILES['image_file']);
         if ($uploadedImage !== '') {
             $image_url = $uploadedImage;
+        }
+    }
+
+    if (!empty($_FILES['hero_video_file']['name'])) {
+        $uploadedVideo = uploadFile($_FILES['hero_video_file']);
+        if ($uploadedVideo !== '') {
+            $hero_video_url = $uploadedVideo;
         }
     }
 
@@ -83,11 +91,14 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
         <div class="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h3 class="fw-bold mb-1">Page Manager</h3>
-            <p class="text-muted mb-0">Create, update and remove pages directly from the admin panel.</p>
+            <p class="text-muted mb-0">Create, update and manage your pages.</p>
           </div>
-          <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
+          <div class="d-flex gap-2">
+            <a href="page_form.php?new=1" class="btn btn-primary">Add New Page</a>
+            <a href="dashboard.php" class="btn btn-outline-secondary">Back to Dashboard</a>
+          </div>
         </div>
-
+        <?php if ($showForm): ?>
         <div class="row g-4">
           <div class="col-lg-7">
             <div class="card admin-card">
@@ -115,8 +126,12 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
                     <textarea name="hero_text" class="form-control" rows="3"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></textarea>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">Hero Video URL</label>
-                    <input type="text" name="hero_video_url" class="form-control" value="<?php echo htmlspecialchars($page['hero_video_url'] ?? ''); ?>">
+                    <label class="form-label">Hero Video Upload</label>
+                    <input type="file" name="hero_video_file" accept="video/*" class="form-control">
+                    <?php if (!empty($page['hero_video_url'])): ?>
+                      <small class="text-muted d-block mt-2">Current video: <a href="../<?php echo htmlspecialchars($page['hero_video_url']); ?>" target="_blank">View file</a></small>
+                    <?php endif; ?>
+                    <input type="hidden" name="existing_hero_video_url" value="<?php echo htmlspecialchars($page['hero_video_url'] ?? ''); ?>">
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Content</label>
@@ -151,24 +166,43 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
               </div>
             </div>
           </div>
-          <div class="col-lg-5">
+        </div>
+        <?php endif; ?>
+        <div class="row g-4">
+          <div class="col-12">
             <div class="card admin-card">
               <div class="card-body">
-                <h4 class="mb-3">Existing Pages</h4>
-                <div class="list-group list-group-flush">
-                  <?php while ($row = $pages->fetch_assoc()): ?>
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-semibold"><?php echo htmlspecialchars($row['title']); ?></div>
-                        <div class="small text-muted">/<?php echo htmlspecialchars($row['slug']); ?></div>
-                      </div>
-                      <div class="btn-group btn-group-sm">
-                        <a href="page_form.php?slug=<?php echo urlencode($row['slug']); ?>" class="btn btn-outline-primary">Edit</a>
-                        <a href="page_form.php?delete=<?php echo urlencode($row['slug']); ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this page?');">Delete</a>
-                      </div>
-                    </div>
-                  <?php endwhile; ?>
-                </div>
+                <?php if ($pages && $pages->num_rows > 0): ?>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>Title</th>
+                          <th class="text-muted">Slug</th>
+                          <th>Status</th>
+                          <th class="text-end">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <?php while ($row = $pages->fetch_assoc()): ?>
+                          <tr>
+                            <td><?php echo htmlspecialchars($row['title']); ?></td>
+                            <td class="text-muted small"><?php echo htmlspecialchars($row['slug']); ?></td>
+                            <td><?php echo !empty($row['show_in_menu']) ? '<span class="badge bg-success">Visible</span>' : '<span class="badge bg-secondary">Hidden</span>'; ?></td>
+                            <td class="text-end">
+                              <div class="btn-group btn-group-sm" role="group">
+                                <a href="page_form.php?slug=<?php echo urlencode($row['slug']); ?>" class="btn btn-outline-primary">Edit</a>
+                                <a href="page_form.php?delete=<?php echo urlencode($row['slug']); ?>" class="btn btn-outline-danger" onclick="return confirm('Delete this page?');">Delete</a>
+                              </div>
+                            </td>
+                          </tr>
+                        <?php endwhile; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                <?php else: ?>
+                  <div class="text-muted">No pages found. Create a new page using the button above.</div>
+                <?php endif; ?>
               </div>
             </div>
           </div>
