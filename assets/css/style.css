@@ -161,6 +161,36 @@ a {
   color: var(--text-base);
 }
 
+.section-intro h2,
+.section-intro h3,
+.section-intro p {
+  text-align: left;
+}
+
+/* Section media (images/videos) - center and make visually prominent */
+.section-media {
+  display: block;
+  margin-top: 1.25rem;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: initial;
+  border-radius: 1.75rem;
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
+}
+
+/* Slider inside container (not full-bleed) */
+.home-slider-section {
+  padding: 3rem 0;
+  background: transparent;
+}
+.home-slider-section .slider-media {
+  border-radius: 1.75rem;
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
+  max-height: 480px;
+  object-fit: cover;
+}
+
 .section-shell p,
 .py-5 p {
   color: var(--text-muted);
@@ -269,6 +299,14 @@ a {
   padding: 4rem 0;
   background: linear-gradient(135deg, #0f172a, #111827);
   color: #f8fafc;
+}
+
+@media (max-width: 767px) {
+  .section-shell,
+  .py-5 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+  }
 }
 
 .footer-top .btn {

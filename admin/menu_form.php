@@ -14,7 +14,7 @@ $toggleId = isset($_GET['toggle']) ? (int)$_GET['toggle'] : 0;
 $showForm = isset($_GET['new']) || $menuId > 0;
 $showList = !$showForm;
 if ($menuId) {
-    $stmt = $conn->prepare('SELECT id, label, link, menu_order, is_active, has_dropdown FROM menu_items WHERE id = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, label, link, menu_order, is_active, has_dropdown, show_in_footer FROM menu_items WHERE id = ? LIMIT 1');
     $stmt->bind_param('i', $menuId);
     $stmt->execute();
     $item = $stmt->get_result()->fetch_assoc();
@@ -64,14 +64,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $menu_order = (int)($_POST['menu_order'] ?? 0);
         $is_active = isset($_POST['is_active']) ? 1 : 0;
         $has_dropdown = isset($_POST['has_dropdown']) ? 1 : 0;
+        $show_in_footer = isset($_POST['show_in_footer']) ? 1 : 0;
 
         if ($id) {
-            $stmt = $conn->prepare('UPDATE menu_items SET label = ?, link = ?, menu_order = ?, is_active = ?, has_dropdown = ? WHERE id = ?');
-            $stmt->bind_param('ssiiii', $label, $link, $menu_order, $is_active, $has_dropdown, $id);
+            $stmt = $conn->prepare('UPDATE menu_items SET label = ?, link = ?, menu_order = ?, is_active = ?, has_dropdown = ?, show_in_footer = ? WHERE id = ?');
+            $stmt->bind_param('ssiiiii', $label, $link, $menu_order, $is_active, $has_dropdown, $show_in_footer, $id);
             $stmt->execute();
         } else {
-            $stmt = $conn->prepare('INSERT INTO menu_items (label, link, menu_order, is_active, has_dropdown) VALUES (?, ?, ?, ?, ?)');
-            $stmt->bind_param('ssiii', $label, $link, $menu_order, $is_active, $has_dropdown);
+            $stmt = $conn->prepare('INSERT INTO menu_items (label, link, menu_order, is_active, has_dropdown, show_in_footer) VALUES (?, ?, ?, ?, ?, ?)');
+            $stmt->bind_param('ssiiii', $label, $link, $menu_order, $is_active, $has_dropdown, $show_in_footer);
             $stmt->execute();
         }
 
@@ -80,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$items = $conn->query('SELECT id, label, link, menu_order, is_active, has_dropdown FROM menu_items ORDER BY menu_order ASC, id ASC');
+$items = $conn->query('SELECT id, label, link, menu_order, is_active, has_dropdown, show_in_footer FROM menu_items ORDER BY menu_order ASC, id ASC');
 $parentItems = $conn->query('SELECT id, label FROM menu_items WHERE has_dropdown = 1 AND is_active = 1 ORDER BY menu_order ASC, id ASC');
 
 $formValues = [
@@ -90,6 +91,7 @@ $formValues = [
     'menu_order' => 0,
     'is_active' => 1,
     'has_dropdown' => 0,
+    'show_in_footer' => 0,
 ];
 
 if ($item) {
@@ -159,6 +161,10 @@ if ($item) {
                     <input class="form-check-input" type="checkbox" name="has_dropdown" value="1" <?php echo (!empty($formValues['has_dropdown']) ? 'checked' : ''); ?>>
                     <label class="form-check-label">Show dropdown on hover</label>
                   </div>
+                  <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="show_in_footer" value="1" <?php echo (!empty($formValues['show_in_footer']) ? 'checked' : ''); ?>>
+                    <label class="form-check-label">Show as footer quick link</label>
+                  </div>
                   <button type="submit" class="btn btn-primary">Save</button>
                 </form>
               </div>
@@ -180,6 +186,7 @@ if ($item) {
                             <div class="d-flex flex-wrap gap-2">
                               <?php echo !empty($row['is_active']) ? '<span class="badge bg-success">Visible</span>' : '<span class="badge bg-secondary">Hidden</span>'; ?>
                               <?php if (!empty($row['has_dropdown'])): ?><span class="badge bg-info text-dark">Dropdown</span><?php endif; ?>
+                              <?php if (!empty($row['show_in_footer'])): ?><span class="badge bg-warning text-dark">Footer</span><?php endif; ?>
                             </div>
                           </div>
                           <div class="btn-group btn-group-sm" role="group">

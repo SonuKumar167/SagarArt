@@ -1,17 +1,17 @@
 <?php
 $siteSettings = getSiteSettings($conn);
-$footerLinks = getHeaderMenuItems($conn);
+$footerLinks = getFooterMenuItems($conn);
 ?>
 <footer class="site-footer">
   <div class="footer-top">
     <div class="container">
       <div class="row align-items-center gap-4">
         <div class="col-lg-8">
-          <h2 class="text-white mb-3">Build memorable digital experiences with a modern agency feel.</h2>
-          <p class="text-white-75">Create more persuasive pages, polished service showcases, and faster contact flows with a website designed for conversions.</p>
+          <h2 class="text-white mb-3"><?php echo htmlspecialchars($siteSettings['footer_cta_heading'] ?? 'Build memorable digital experiences with a modern agency feel.'); ?></h2>
+          <p class="text-white-75"><?php echo htmlspecialchars($siteSettings['footer_cta_text'] ?? 'Create more persuasive pages, polished service showcases, and faster contact flows with a website designed for conversions.'); ?></p>
         </div>
         <div class="col-lg-auto">
-          <a href="contact.php" class="btn btn-primary">Get in touch</a>
+          <a href="<?php echo htmlspecialchars($siteSettings['footer_cta_button_link'] ?? 'contact.php'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($siteSettings['footer_cta_button_text'] ?? 'Get in touch'); ?></a>
         </div>
       </div>
     </div>
@@ -25,9 +25,13 @@ $footerLinks = getHeaderMenuItems($conn);
       <div class="col-md-4 footer-widget">
         <h5>Quick Links</h5>
         <ul class="footer-links">
-          <?php foreach ($footerLinks as $link): ?>
-            <li><a href="<?php echo htmlspecialchars($link['link']); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
-          <?php endforeach; ?>
+          <?php if (!empty($footerLinks)): ?>
+            <?php foreach ($footerLinks as $link): ?>
+              <li><a href="<?php echo htmlspecialchars($link['link']); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <li>No quick links have been configured yet.</li>
+          <?php endif; ?>
         </ul>
       </div>
       <div class="col-md-4 footer-widget">

@@ -8,9 +8,17 @@ if (!isAdminLoggedIn()) {
 
 $slug = $_GET['slug'] ?? '';
 $sectionId = isset($_GET['section_id']) ? (int)$_GET['section_id'] : 0;
+$deleteSectionId = isset($_GET['delete_section']) ? (int)$_GET['delete_section'] : 0;
 $section = null;
+if ($deleteSectionId) {
+    $stmt = $conn->prepare('DELETE FROM page_sections WHERE id = ? AND page_slug = ? LIMIT 1');
+    $stmt->bind_param('is', $deleteSectionId, $slug);
+    $stmt->execute();
+    header('Location: page_section_form.php?slug=' . urlencode($slug));
+    exit;
+}
 if ($sectionId) {
-    $stmt = $conn->prepare('SELECT id, page_slug, title, content, section_type, image_url, video_url, button_text, button_link, sort_order FROM page_sections WHERE id = ? LIMIT 1');
+  $stmt = $conn->prepare('SELECT id, page_slug, title, content, section_type, image_url, video_url, button_text, button_link, sort_order, settings FROM page_sections WHERE id = ? LIMIT 1');
     $stmt->bind_param('i', $sectionId);
     $stmt->execute();
     $section = $stmt->get_result()->fetch_assoc();
@@ -26,6 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $button_text = trim($_POST['button_text'] ?? '');
     $button_link = trim($_POST['button_link'] ?? '');
     $sort_order = (int)($_POST['sort_order'] ?? 0);
+    $settingsJson = '';
+    // handle services selection when section_type is services
+    if ($section_type === 'services') {
+      $selected = $_POST['selected_services'] ?? [];
+      if (!is_array($selected)) {
+        $selected = [$selected];
+      }
+      $serviceIds = array_map('intval', $selected);
+      $displayCount = (int)($_POST['service_count'] ?? count($serviceIds));
+      $settings = ['service_ids' => $serviceIds, 'count' => $displayCount];
+      $settingsJson = json_encode($settings);
+    }
 
     if (!empty($_FILES['image_file']['name'])) {
         $uploadedImage = uploadFile($_FILES['image_file']);
@@ -35,17 +55,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($sectionId) {
-        $stmt = $conn->prepare('UPDATE page_sections SET page_slug = ?, title = ?, content = ?, section_type = ?, image_url = ?, video_url = ?, button_text = ?, button_link = ?, sort_order = ? WHERE id = ?');
-        $stmt->bind_param('ssssssssii', $page_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $sort_order, $sectionId);
-        $stmt->execute();
+      $stmt = $conn->prepare('UPDATE page_sections SET page_slug = ?, title = ?, content = ?, section_type = ?, image_url = ?, video_url = ?, button_text = ?, button_link = ?, settings = ?, sort_order = ? WHERE id = ?');
+      $stmt->bind_param('sssssssssii', $page_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $settingsJson, $sort_order, $sectionId);
+      $stmt->execute();
+      // Redirect to the edit view to ensure we reload saved settings from the database
+      header('Location: page_section_form.php?slug=' . urlencode($page_slug) . '&section_id=' . (int)$sectionId);
+      exit;
     } else {
-        $stmt = $conn->prepare('INSERT INTO page_sections (page_slug, title, content, section_type, image_url, video_url, button_text, button_link, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->bind_param('ssssssssi', $page_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $sort_order);
-        $stmt->execute();
+      $stmt = $conn->prepare('INSERT INTO page_sections (page_slug, title, content, section_type, image_url, video_url, button_text, button_link, settings, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      $stmt->bind_param('sssssssssi', $page_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $settingsJson, $sort_order);
+      $stmt->execute();
+      $newId = $conn->insert_id;
+      header('Location: page_section_form.php?slug=' . urlencode($page_slug) . '&section_id=' . (int)$newId);
+      exit;
     }
-
-    $success = 'Section saved successfully.';
-    $section = ['page_slug' => $page_slug, 'title' => $title, 'content' => $content, 'section_type' => $section_type, 'image_url' => $image_url, 'video_url' => $video_url, 'button_text' => $button_text, 'button_link' => $button_link, 'sort_order' => $sort_order];
 }
 
 $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_sections WHERE page_slug = \'' . $conn->real_escape_string($slug) . '\' ORDER BY sort_order ASC, id ASC');
@@ -88,7 +111,41 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
                 <select name="section_type" class="form-select">
                   <option value="content" <?php echo (($section['section_type'] ?? 'content') === 'content' ? 'selected' : ''); ?>>Content</option>
                   <option value="slider" <?php echo (($section['section_type'] ?? 'content') === 'slider' ? 'selected' : ''); ?>>Slider</option>
+                  <option value="services" <?php echo (($section['section_type'] ?? 'content') === 'services' ? 'selected' : ''); ?>>Featured Services</option>
                 </select>
+              </div>
+              <?php
+                $allServices = $conn->query('SELECT id, title FROM services ORDER BY display_order ASC, id ASC');
+                $selectedServiceIds = [];
+                $serviceCount = 3;
+                if (!empty($section['settings'])) {
+                    $settingsDecoded = json_decode($section['settings'], true);
+                    if (is_array($settingsDecoded)) {
+                        $selectedServiceIds = $settingsDecoded['service_ids'] ?? [];
+                        $serviceCount = (int)($settingsDecoded['count'] ?? $serviceCount);
+                    }
+                }
+              ?>
+              <div class="mb-3">
+                <label class="form-label">Select Services (for Featured Services section)</label>
+                <div class="row">
+                  <?php if ($allServices && $allServices->num_rows > 0): ?>
+                    <?php while ($s = $allServices->fetch_assoc()): ?>
+                      <div class="col-md-4 col-sm-6">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="selected_services[]" value="<?php echo (int)$s['id']; ?>" id="svc_<?php echo (int)$s['id']; ?>" <?php echo (in_array((int)$s['id'], $selectedServiceIds) ? 'checked' : ''); ?>>
+                          <label class="form-check-label" for="svc_<?php echo (int)$s['id']; ?>"><?php echo htmlspecialchars($s['title']); ?></label>
+                        </div>
+                      </div>
+                    <?php endwhile; ?>
+                  <?php else: ?>
+                    <div class="col-12 small text-muted">No services available. Add services first.</div>
+                  <?php endif; ?>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Number of services to display</label>
+                <input type="number" name="service_count" class="form-control" value="<?php echo htmlspecialchars($serviceCount); ?>">
               </div>
               <div class="mb-3">
                 <label class="form-label">Content</label>
@@ -129,7 +186,10 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
               <?php while ($item = $sections->fetch_assoc()): ?>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   <span><?php echo htmlspecialchars($item['title'] ?: 'Untitled Section'); ?> (<?php echo htmlspecialchars($item['section_type']); ?>)</span>
+                  <div class="btn-group btn-group-sm" role="group">
                   <a href="page_section_form.php?slug=<?php echo urlencode($slug); ?>&section_id=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                  <a href="page_section_form.php?slug=<?php echo urlencode($slug); ?>&delete_section=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this section?');">Delete</a>
+                </div>
                 </li>
               <?php endwhile; ?>
             </ul>

@@ -48,41 +48,45 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
 
   <section class="py-5">
     <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-7">
-          <h2><?php echo htmlspecialchars($page['title']); ?></h2>
-          <p><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
+      <div class="row">
+        <div class="col-lg-8 mx-auto section-intro">
+          <h2 class="mb-3"><?php echo htmlspecialchars($page['title']); ?></h2>
+          <p class="lead mb-4"><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
         </div>
-        <?php if (!empty($page['image_url'])): ?>
-          <div class="col-lg-5">
-            <img src="<?php echo htmlspecialchars($page['image_url']); ?>" alt="<?php echo htmlspecialchars($page['title']); ?>" class="img-fluid rounded shadow">
-          </div>
-        <?php endif; ?>
       </div>
+      <?php if (!empty($page['image_url'])): ?>
+        <div class="row mt-4">
+          <div class="col-lg-6 mx-auto text-center">
+              <img src="<?php echo htmlspecialchars($page['image_url']); ?>" alt="<?php echo htmlspecialchars($page['title']); ?>" class="section-media">
+          </div>
+        </div>
+      <?php endif; ?>
     </div>
   </section>
 
   <?php foreach ($sections as $section): ?>
     <section class="py-5">
       <div class="container">
-        <div class="row align-items-center g-4">
-          <div class="col-lg-7">
+        <div class="row">
+            <div class="col-lg-7">
             <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
             <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
             <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? '#'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
           </div>
-          <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
-            <div class="col-lg-5">
+        </div>
+        <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
+          <div class="row mt-4">
+              <div class="col-lg-5">
               <?php if (!empty($section['video_url'])): ?>
-                <video class="img-fluid rounded shadow" autoplay muted loop controls>
+                <video class="section-media" autoplay muted loop playsinline>
                   <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
                 </video>
               <?php else: ?>
-                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="img-fluid rounded shadow">
+                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="section-media">
               <?php endif; ?>
             </div>
-          <?php endif; ?>
-        </div>
+          </div>
+        <?php endif; ?>
       </div>
     </section>
   <?php endforeach; ?>

@@ -51,6 +51,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS `site_settings` (
   `footer_email` VARCHAR(255) DEFAULT NULL,
   `footer_phone` VARCHAR(255) DEFAULT NULL,
   `footer_address` TEXT DEFAULT NULL,
+  `footer_cta_heading` VARCHAR(255) DEFAULT NULL,
+  `footer_cta_text` TEXT DEFAULT NULL,
+  `footer_cta_button_text` VARCHAR(255) DEFAULT NULL,
+  `footer_cta_button_link` VARCHAR(255) DEFAULT NULL,
   `footer_copyright` VARCHAR(255) DEFAULT NULL,
   `favicon_url` VARCHAR(255) DEFAULT NULL,
   `logo_url` VARCHAR(255) DEFAULT NULL,
@@ -123,9 +127,15 @@ addColumnIfMissing($conn, 'services', 'image_url', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'display_order', 'INT NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'services', 'is_featured', 'TINYINT(1) NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'menu_items', 'has_dropdown', 'TINYINT(1) NOT NULL DEFAULT 0');
+addColumnIfMissing($conn, 'menu_items', 'show_in_footer', 'TINYINT(1) NOT NULL DEFAULT 0');
+addColumnIfMissing($conn, 'page_sections', 'settings', 'TEXT DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'header_text', 'TEXT DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'header_cta_text', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'header_cta_link', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'footer_cta_heading', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'footer_cta_text', 'TEXT DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'footer_cta_button_text', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'site_settings', 'footer_cta_button_link', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'favicon_url', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'logo_url', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'site_settings', 'meta_title', 'VARCHAR(255) DEFAULT NULL');
@@ -143,12 +153,16 @@ $conn->query("INSERT INTO `pages` (slug, title, content, hero_title, hero_text, 
   ('about', 'About', 'We are a creative agency focused on digital strategy and web experiences.', 'About Us', 'We combine design, development, and strategy to deliver memorable experiences.', 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80'),
   ('contact', 'Contact', 'Reach out to discuss your next project and let us build something meaningful together.', 'Contact Us', 'Let us know about your ideas and we will be happy to help.', 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80')
   ON DUPLICATE KEY UPDATE title = VALUES(title)");
-$conn->query("INSERT INTO `services` (title, slug, summary, content) VALUES
-  ('Web Design', 'web-design', 'Beautiful and modern interfaces for your brand.', 'We design responsive websites that feel premium and work perfectly across all devices.'),
-  ('Web Development', 'web-development', 'Reliable PHP and MySQL-based applications.', 'We develop custom PHP applications with fast load times and clean architecture.'),
-  ('SEO Optimization', 'seo-optimization', 'Boost your online visibility and organic traffic.', 'We improve your website structure, content, and metadata to rank higher in search results.'),
-  ('Brand Strategy', 'brand-strategy', 'Create a strong message and identity for your business.', 'We help shape your brand voice, positioning, and visual identity for lasting growth.')
-  ON DUPLICATE KEY UPDATE title = VALUES(title)");
+// Seed default services only if table is empty to avoid re-creating on each request
+$serviceCount = $conn->query('SELECT COUNT(*) AS c FROM services')->fetch_assoc()['c'] ?? 0;
+if ((int)$serviceCount === 0) {
+        $conn->query("INSERT INTO `services` (title, slug, summary, content) VALUES
+            ('Web Design', 'web-design', 'Beautiful and modern interfaces for your brand.', 'We design responsive websites that feel premium and work perfectly across all devices.'),
+            ('Web Development', 'web-development', 'Reliable PHP and MySQL-based applications.', 'We develop custom PHP applications with fast load times and clean architecture.'),
+            ('SEO Optimization', 'seo-optimization', 'Boost your online visibility and organic traffic.', 'We improve your website structure, content, and metadata to rank higher in search results.'),
+            ('Brand Strategy', 'brand-strategy', 'Create a strong message and identity for your business.', 'We help shape your brand voice, positioning, and visual identity for lasting growth.')
+            ON DUPLICATE KEY UPDATE title = VALUES(title)");
+}
 $conn->query("INSERT INTO `site_settings` (id, site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright, favicon_url, logo_url, meta_title, meta_description, facebook_url, instagram_url, twitter_url, youtube_url) VALUES (1, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.', NULL, NULL, 'Sagar Art | Creative Digital Agency', 'We design and develop modern websites and digital experiences for brands that want to stand out.', 'https://facebook.com', 'https://instagram.com', 'https://twitter.com', 'https://youtube.com') ON DUPLICATE KEY UPDATE site_name = VALUES(site_name), tagline = VALUES(tagline), header_text = VALUES(header_text), header_cta_text = VALUES(header_cta_text), header_cta_link = VALUES(header_cta_link), footer_about = VALUES(footer_about), footer_email = VALUES(footer_email), footer_phone = VALUES(footer_phone), footer_address = VALUES(footer_address), footer_copyright = VALUES(footer_copyright), favicon_url = VALUES(favicon_url), logo_url = VALUES(logo_url), meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), facebook_url = VALUES(facebook_url), instagram_url = VALUES(instagram_url), twitter_url = VALUES(twitter_url), youtube_url = VALUES(youtube_url)");
 
 function slugify($text) {
@@ -209,7 +223,7 @@ function getMenuChildren($conn, $parentId) {
 }
 
 function getPageSections($conn, $slug) {
-    $stmt = $conn->prepare('SELECT id, title, content, section_type, image_url, video_url, button_text, button_link FROM page_sections WHERE page_slug = ? ORDER BY sort_order ASC, id ASC');
+    $stmt = $conn->prepare('SELECT id, title, content, section_type, image_url, video_url, button_text, button_link, settings FROM page_sections WHERE page_slug = ? ORDER BY sort_order ASC, id ASC');
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -251,6 +265,11 @@ function getSiteSettings($conn) {
     }
 
     return $settings;
+}
+
+function getFooterMenuItems($conn) {
+    $result = $conn->query('SELECT label, link FROM menu_items WHERE is_active = 1 AND show_in_footer = 1 ORDER BY menu_order ASC, id ASC');
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
 function getServices($conn) {

@@ -37,7 +37,11 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
 
   <section class="py-5">
     <div class="container">
-      <p class="mb-4"><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
+      <div class="row">
+        <div class="col-12">
+          <p class="mb-4"><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
+        </div>
+      </div>
       <div class="row g-4">
         <?php foreach ($services as $service): ?>
           <div class="col-md-6">
@@ -57,25 +61,48 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
   <?php foreach ($sections as $section): ?>
     <section class="py-5">
       <div class="container">
-        <div class="row align-items-center g-4">
-          <div class="col-lg-7">
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
             <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
             <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
           </div>
-          <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
-            <div class="col-lg-5">
+        </div>
+        <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
+          <div class="row mt-4">
+            <div class="col-lg-10 mx-auto text-center">
               <?php if (!empty($section['video_url'])): ?>
-                <video class="img-fluid rounded shadow" autoplay muted loop controls>
+                <video class="section-media" autoplay muted loop playsinline>
                   <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
                 </video>
               <?php else: ?>
-                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="img-fluid rounded shadow">
+                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="section-media">
               <?php endif; ?>
             </div>
-          <?php endif; ?>
-        </div>
+          </div>
+        <?php endif; ?>
       </div>
     </section>
+      <section class="py-5">
+        <div class="container">
+          <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+              <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
+              <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
+            </div>
+            <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
+              <div class="col-lg-5">
+                <?php if (!empty($section['video_url'])): ?>
+                  <video class="img-fluid rounded shadow" autoplay muted loop controls>
+                    <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
+                  </video>
+                <?php else: ?>
+                  <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="img-fluid rounded shadow">
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </section>
   <?php endforeach; ?>
 
   <?php include 'includes/footer.php'; ?>

@@ -18,6 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $footer_email = trim($_POST['footer_email'] ?? '');
     $footer_phone = trim($_POST['footer_phone'] ?? '');
     $footer_address = trim($_POST['footer_address'] ?? '');
+    $footer_cta_heading = trim($_POST['footer_cta_heading'] ?? '');
+    $footer_cta_text = trim($_POST['footer_cta_text'] ?? '');
+    $footer_cta_button_text = trim($_POST['footer_cta_button_text'] ?? '');
+    $footer_cta_button_link = trim($_POST['footer_cta_button_link'] ?? '');
     $footer_copyright = trim($_POST['footer_copyright'] ?? '');
     $meta_title = trim($_POST['meta_title'] ?? '');
     $meta_description = trim($_POST['meta_description'] ?? '');
@@ -42,12 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $params = [$site_name, $tagline, $header_text, $header_cta_text, $header_cta_link, $footer_about, $footer_email, $footer_phone, $footer_address, $footer_copyright, $favicon_url, $logo_url, $meta_title, $meta_description, $facebook_url, $instagram_url, $twitter_url, $youtube_url];
+    $params = [$site_name, $tagline, $header_text, $header_cta_text, $header_cta_link, $footer_about, $footer_email, $footer_phone, $footer_address, $footer_cta_heading, $footer_cta_text, $footer_cta_button_text, $footer_cta_button_link, $footer_copyright, $favicon_url, $logo_url, $meta_title, $meta_description, $facebook_url, $instagram_url, $twitter_url, $youtube_url];
     $types = str_repeat('s', count($params));
-    $stmt = $conn->prepare('INSERT INTO site_settings (site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright, favicon_url, logo_url, meta_title, meta_description, facebook_url, instagram_url, twitter_url, youtube_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $conn->prepare('INSERT INTO site_settings (site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_cta_heading, footer_cta_text, footer_cta_button_text, footer_cta_button_link, footer_copyright, favicon_url, logo_url, meta_title, meta_description, facebook_url, instagram_url, twitter_url, youtube_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    $settings = ['site_name' => $site_name, 'tagline' => $tagline, 'header_text' => $header_text, 'header_cta_text' => $header_cta_text, 'header_cta_link' => $header_cta_link, 'footer_about' => $footer_about, 'footer_email' => $footer_email, 'footer_phone' => $footer_phone, 'footer_address' => $footer_address, 'footer_copyright' => $footer_copyright, 'favicon_url' => $favicon_url, 'logo_url' => $logo_url, 'meta_title' => $meta_title, 'meta_description' => $meta_description, 'facebook_url' => $facebook_url, 'instagram_url' => $instagram_url, 'twitter_url' => $twitter_url, 'youtube_url' => $youtube_url];
+    $settings = ['site_name' => $site_name, 'tagline' => $tagline, 'header_text' => $header_text, 'header_cta_text' => $header_cta_text, 'header_cta_link' => $header_cta_link, 'footer_about' => $footer_about, 'footer_email' => $footer_email, 'footer_phone' => $footer_phone, 'footer_address' => $footer_address, 'footer_cta_heading' => $footer_cta_heading, 'footer_cta_text' => $footer_cta_text, 'footer_cta_button_text' => $footer_cta_button_text, 'footer_cta_button_link' => $footer_cta_button_link, 'footer_copyright' => $footer_copyright, 'favicon_url' => $favicon_url, 'logo_url' => $logo_url, 'meta_title' => $meta_title, 'meta_description' => $meta_description, 'facebook_url' => $facebook_url, 'instagram_url' => $instagram_url, 'twitter_url' => $twitter_url, 'youtube_url' => $youtube_url];
     $success = 'Settings updated successfully.';
 }
 ?>
@@ -143,6 +147,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <div class="mb-3">
                 <label class="form-label">Footer About</label>
                 <textarea name="footer_about" class="form-control" rows="3"><?php echo htmlspecialchars($settings['footer_about'] ?? ''); ?></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer CTA Heading</label>
+                <input type="text" name="footer_cta_heading" class="form-control" value="<?php echo htmlspecialchars($settings['footer_cta_heading'] ?? 'Build memorable digital experiences.'); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer CTA Text</label>
+                <textarea name="footer_cta_text" class="form-control" rows="3"><?php echo htmlspecialchars($settings['footer_cta_text'] ?? 'Create more persuasive pages, polished service showcases, and faster contact flows with a website designed for conversions.'); ?></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer CTA Button Text</label>
+                <input type="text" name="footer_cta_button_text" class="form-control" value="<?php echo htmlspecialchars($settings['footer_cta_button_text'] ?? 'Get in touch'); ?>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Footer CTA Button Link</label>
+                <input type="text" name="footer_cta_button_link" class="form-control" value="<?php echo htmlspecialchars($settings['footer_cta_button_link'] ?? 'contact.php'); ?>">
               </div>
               <div class="mb-3">
                 <label class="form-label">Footer Email</label>
