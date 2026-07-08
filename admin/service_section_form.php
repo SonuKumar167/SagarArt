@@ -12,14 +12,14 @@ $deleteSectionId = isset($_GET['delete_section']) ? (int)$_GET['delete_section']
 $removeSlideIndex = isset($_GET['remove_slide']) ? (int)$_GET['remove_slide'] : null;
 $section = null;
 if ($deleteSectionId) {
-    $stmt = $conn->prepare('DELETE FROM page_sections WHERE id = ? AND page_slug = ? LIMIT 1');
+    $stmt = $conn->prepare('DELETE FROM service_sections WHERE id = ? AND service_slug = ? LIMIT 1');
     $stmt->bind_param('is', $deleteSectionId, $slug);
     $stmt->execute();
-    header('Location: page_section_form.php?slug=' . urlencode($slug));
+    header('Location: service_section_form.php?slug=' . urlencode($slug));
     exit;
 }
 if ($sectionId) {
-    $stmt = $conn->prepare('SELECT id, page_slug, title, content, section_type, image_url, video_url, button_text, button_link, sort_order, settings FROM page_sections WHERE id = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, service_slug, title, content, section_type, image_url, video_url, button_text, button_link, sort_order, settings FROM service_sections WHERE id = ? LIMIT 1');
     $stmt->bind_param('i', $sectionId);
     $stmt->execute();
     $section = $stmt->get_result()->fetch_assoc();
@@ -32,112 +32,109 @@ if ($section && $removeSlideIndex !== null && $section['section_type'] === 'slid
     if (isset($slides[$removeSlideIndex])) {
         array_splice($slides, $removeSlideIndex, 1);
         $settingsDecoded['slides'] = array_values($slides);
-        $stmt = $conn->prepare('UPDATE page_sections SET settings = ? WHERE id = ?');
+        $stmt = $conn->prepare('UPDATE service_sections SET settings = ? WHERE id = ?');
         $settingsJson = json_encode($settingsDecoded);
         $stmt->bind_param('si', $settingsJson, $sectionId);
         $stmt->execute();
     }
-    header('Location: page_section_form.php?slug=' . urlencode($slug) . '&section_id=' . $sectionId);
+    header('Location: service_section_form.php?slug=' . urlencode($slug) . '&section_id=' . $sectionId);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $page_slug = trim($_POST['page_slug'] ?? $slug);
+  $service_slug = trim($_POST['service_slug'] ?? $slug);
   $title = trim($_POST['title'] ?? '');
   $content = trim($_POST['content'] ?? '');
   $section_type = trim($_POST['section_type'] ?? 'content');
-  // preserve existing values from loaded section when editing
   $image_url = $section['image_url'] ?? '';
   $video_url = $section['video_url'] ?? '';
-    $button_text = trim($_POST['button_text'] ?? '');
-    $button_link = trim($_POST['button_link'] ?? '');
-    $sort_order = (int)($_POST['sort_order'] ?? 0);
-    $settingsJson = '';
-    if ($section_type === 'slider') {
-      $existingSlideUrls = $_POST['existing_slide_urls'] ?? [];
-      $existingSlideLinks = $_POST['existing_slide_links'] ?? [];
-      if (!is_array($existingSlideUrls)) {
-        $existingSlideUrls = [$existingSlideUrls];
-      }
-      if (!is_array($existingSlideLinks)) {
-        $existingSlideLinks = [$existingSlideLinks];
-      }
-      $slides = [];
-      foreach ($existingSlideUrls as $index => $slideUrl) {
-        $slideUrl = trim($slideUrl);
-        if ($slideUrl === '') {
-          continue;
-        }
-        $slideLink = trim($existingSlideLinks[$index] ?? '');
-        $slides[] = ['url' => $slideUrl, 'link' => $slideLink];
-      }
-      if (!empty($_FILES['slide_image_file']['name'])) {
-          $uploadedSlide = uploadFile($_FILES['slide_image_file']);
-          if ($uploadedSlide !== '') {
-              $slides[] = [
-                'url' => $uploadedSlide,
-                'link' => trim($_POST['new_slide_link'] ?? '')
-              ];
-          }
-      }
-      $settings = ['slides' => $slides];
-      $settingsJson = json_encode($settings);
-    } elseif ($section_type === 'services') {
-      $selected = $_POST['selected_services'] ?? [];
-      if (!is_array($selected)) {
-        $selected = [$selected];
-      }
-      $serviceIds = array_map('intval', $selected);
-      $displayCount = (int)($_POST['service_count'] ?? count($serviceIds));
-      $settings = ['service_ids' => $serviceIds, 'count' => $displayCount];
-      $settingsJson = json_encode($settings);
+  $button_text = trim($_POST['button_text'] ?? '');
+  $button_link = trim($_POST['button_link'] ?? '');
+  $sort_order = (int)($_POST['sort_order'] ?? 0);
+  $settingsJson = '';
+  if ($section_type === 'slider') {
+    $existingSlideUrls = $_POST['existing_slide_urls'] ?? [];
+    $existingSlideLinks = $_POST['existing_slide_links'] ?? [];
+    if (!is_array($existingSlideUrls)) {
+      $existingSlideUrls = [$existingSlideUrls];
     }
-
-    // single file upload for non-slider sections (image or video)
-    if ($section_type !== 'slider' && !empty($_FILES['file_upload']['name'])) {
-      $uploadedFile = uploadFile($_FILES['file_upload']);
-      if ($uploadedFile !== '') {
-        $mediaType = detectMediaType($uploadedFile);
-        if ($mediaType === 'video') {
-          $video_url = $uploadedFile;
-          $image_url = '';
-        } else {
-          $image_url = $uploadedFile;
-          $video_url = '';
-        }
-      }
+    if (!is_array($existingSlideLinks)) {
+      $existingSlideLinks = [$existingSlideLinks];
     }
+    $slides = [];
+    foreach ($existingSlideUrls as $index => $slideUrl) {
+      $slideUrl = trim($slideUrl);
+      if ($slideUrl === '') {
+        continue;
+      }
+      $slideLink = trim($existingSlideLinks[$index] ?? '');
+      $slides[] = ['url' => $slideUrl, 'link' => $slideLink];
+    }
+    if (!empty($_FILES['slide_image_file']['name'])) {
+        $uploadedSlide = uploadFile($_FILES['slide_image_file']);
+        if ($uploadedSlide !== '') {
+            $slides[] = [
+              'url' => $uploadedSlide,
+              'link' => trim($_POST['new_slide_link'] ?? '')
+            ];
+        }
+    }
+    $settings = ['slides' => $slides];
+    $settingsJson = json_encode($settings);
+  } elseif ($section_type === 'services') {
+    $selected = $_POST['selected_services'] ?? [];
+    if (!is_array($selected)) {
+      $selected = [$selected];
+    }
+    $serviceIds = array_map('intval', $selected);
+    $displayCount = (int)($_POST['service_count'] ?? count($serviceIds));
+    $settings = ['service_ids' => $serviceIds, 'count' => $displayCount];
+    $settingsJson = json_encode($settings);
+  }
 
-    if ($section_type === 'slider') {
+  if ($section_type !== 'slider' && !empty($_FILES['file_upload']['name'])) {
+    $uploadedFile = uploadFile($_FILES['file_upload']);
+    if ($uploadedFile !== '') {
+      $mediaType = detectMediaType($uploadedFile);
+      if ($mediaType === 'video') {
+        $video_url = $uploadedFile;
         $image_url = '';
+      } else {
+        $image_url = $uploadedFile;
         $video_url = '';
+      }
     }
+  }
 
-    if ($sectionId) {
-      $stmt = $conn->prepare('UPDATE page_sections SET page_slug = ?, title = ?, content = ?, section_type = ?, image_url = ?, video_url = ?, button_text = ?, button_link = ?, settings = ?, sort_order = ? WHERE id = ?');
-      $stmt->bind_param('sssssssssii', $page_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $settingsJson, $sort_order, $sectionId);
-      $stmt->execute();
-      // Redirect to the edit view to ensure we reload saved settings from the database
-      header('Location: page_section_form.php?slug=' . urlencode($page_slug) . '&section_id=' . (int)$sectionId);
-      exit;
-    } else {
-      $stmt = $conn->prepare('INSERT INTO page_sections (page_slug, title, content, section_type, image_url, video_url, button_text, button_link, settings, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-      $stmt->bind_param('sssssssssi', $page_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $settingsJson, $sort_order);
-      $stmt->execute();
-      $newId = $conn->insert_id;
-      header('Location: page_section_form.php?slug=' . urlencode($page_slug) . '&section_id=' . (int)$newId);
-      exit;
-    }
+  if ($section_type === 'slider') {
+      $image_url = '';
+      $video_url = '';
+  }
+
+  if ($sectionId) {
+    $stmt = $conn->prepare('UPDATE service_sections SET service_slug = ?, title = ?, content = ?, section_type = ?, image_url = ?, video_url = ?, button_text = ?, button_link = ?, settings = ?, sort_order = ? WHERE id = ?');
+    $stmt->bind_param('sssssssssii', $service_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $settingsJson, $sort_order, $sectionId);
+    $stmt->execute();
+    header('Location: service_section_form.php?slug=' . urlencode($service_slug) . '&section_id=' . (int)$sectionId);
+    exit;
+  } else {
+    $stmt = $conn->prepare('INSERT INTO service_sections (service_slug, title, content, section_type, image_url, video_url, button_text, button_link, settings, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->bind_param('sssssssssi', $service_slug, $title, $content, $section_type, $image_url, $video_url, $button_text, $button_link, $settingsJson, $sort_order);
+    $stmt->execute();
+    $newId = $conn->insert_id;
+    header('Location: service_section_form.php?slug=' . urlencode($service_slug) . '&section_id=' . (int)$newId);
+    exit;
+  }
 }
 
-$sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_sections WHERE page_slug = \'' . $conn->real_escape_string($slug) . '\' ORDER BY sort_order ASC, id ASC');
+$sections = $conn->query('SELECT id, title, section_type, sort_order FROM service_sections WHERE service_slug = \'' . $conn->real_escape_string($slug) . '\' ORDER BY sort_order ASC, id ASC');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Sections</title>
+  <title>Service Sections</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
@@ -148,19 +145,16 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
       <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h3 class="fw-bold mb-1">Manage Sections</h3>
-            <p class="text-muted mb-0">Add extra content blocks for the selected page.</p>
+            <h3 class="fw-bold mb-1">Manage Service Sections</h3>
+            <p class="text-muted mb-0">Add extra content blocks for the selected service.</p>
           </div>
-          <a href="page_form.php?slug=<?php echo urlencode($slug); ?>" class="btn btn-outline-secondary">Back to Page</a>
+          <a href="service_form.php?slug=<?php echo urlencode($slug); ?>" class="btn btn-outline-secondary">Back to Service</a>
         </div>
         <div class="card admin-card mb-4">
           <div class="card-body">
             <h3>Manage Sections for <?php echo htmlspecialchars($slug); ?></h3>
-            <?php if (!empty($success)): ?>
-              <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
             <form method="post" enctype="multipart/form-data">
-              <input type="hidden" name="page_slug" value="<?php echo htmlspecialchars($slug); ?>">
+              <input type="hidden" name="service_slug" value="<?php echo htmlspecialchars($slug); ?>">
               <div class="mb-3">
                 <label class="form-label">Section Title</label>
                 <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($section['title'] ?? ''); ?>">
@@ -174,7 +168,7 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
                 </select>
               </div>
               <?php
-                $allServices = $conn->query('SELECT id, title FROM services ORDER BY display_order ASC, id ASC');
+                $allServices = $conn->query('SELECT id, title FROM services ORDER BY menu_order ASC, id ASC');
                 $selectedServiceIds = [];
                 $serviceCount = 3;
                 if (!empty($section['settings'])) {
@@ -228,7 +222,7 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
                             <img src="<?php echo htmlspecialchars('/' . ltrim($slideUrl, '/\\')); ?>" alt="Slide <?php echo $index + 1; ?>" class="img-fluid rounded mb-2">
                             <div class="d-flex justify-content-between align-items-center">
                               <span class="small">Slide <?php echo $index + 1; ?></span>
-                              <a href="page_section_form.php?slug=<?php echo urlencode($slug); ?>&section_id=<?php echo (int)$sectionId; ?>&remove_slide=<?php echo $index; ?>" class="btn btn-sm btn-outline-danger">Remove</a>
+                              <a href="service_section_form.php?slug=<?php echo urlencode($slug); ?>&section_id=<?php echo (int)$sectionId; ?>&remove_slide=<?php echo $index; ?>" class="btn btn-sm btn-outline-danger">Remove</a>
                             </div>
                             <input type="hidden" name="existing_slide_urls[]" value="<?php echo htmlspecialchars($slideUrl); ?>">
                             <label class="form-label mt-3">Slide redirect URL</label>
@@ -287,9 +281,9 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   <span><?php echo htmlspecialchars($item['title'] ?: 'Untitled Section'); ?> (<?php echo htmlspecialchars($item['section_type']); ?>)</span>
                   <div class="btn-group btn-group-sm" role="group">
-                  <a href="page_section_form.php?slug=<?php echo urlencode($slug); ?>&section_id=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
-                  <a href="page_section_form.php?slug=<?php echo urlencode($slug); ?>&delete_section=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this section?');">Delete</a>
-                </div>
+                    <a href="service_section_form.php?slug=<?php echo urlencode($slug); ?>&section_id=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <a href="service_section_form.php?slug=<?php echo urlencode($slug); ?>&delete_section=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this section?');">Delete</a>
+                  </div>
                 </li>
               <?php endwhile; ?>
             </ul>

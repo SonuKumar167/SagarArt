@@ -34,59 +34,91 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
 <body>
   <?php include 'includes/header.php'; ?>
 
-  <section class="page-hero text-white d-flex align-items-center">
+  <section class="page-hero text-white d-flex align-items-center" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($page['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($page['image_url'] ?? ''); ?>'); background-size: cover; background-position: center; color: <?php echo htmlspecialchars($page['hero_text_color'] ?? '#ffffff'); ?>;">
     <div class="container">
-      <h1 class="display-5 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
-      <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
-      <?php if (!empty($page['hero_video_url'])): ?>
-        <video class="hero-video mt-4" autoplay muted loop playsinline controls>
-          <source src="<?php echo htmlspecialchars($page['hero_video_url']); ?>" type="video/mp4">
-        </video>
-      <?php endif; ?>
-    </div>
-  </section>
-
-  <section class="py-5">
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-8 mx-auto section-intro">
-          <h2 class="mb-3"><?php echo htmlspecialchars($page['title']); ?></h2>
-          <p class="lead mb-4"><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
+      <div class="row align-items-center gy-4">
+        <div class="col-lg-7">
+          <h1 class="display-5 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
+          <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
+          <?php if (!empty($page['hero_video_url'])): ?>
+            <div class="mt-4 d-none d-lg-block"></div>
+          <?php endif; ?>
         </div>
-      </div>
-      <?php if (!empty($page['image_url'])): ?>
-        <div class="row mt-4">
-          <div class="col-lg-6 mx-auto text-center">
-              <img src="<?php echo htmlspecialchars($page['image_url']); ?>" alt="<?php echo htmlspecialchars($page['title']); ?>" class="section-media">
+        <?php if (!empty($page['hero_video_url'])): ?>
+          <div class="col-lg-5">
+            <video class="hero-video shadow" autoplay muted loop playsinline controls>
+              <source src="<?php echo htmlspecialchars($page['hero_video_url']); ?>" type="video/mp4">
+            </video>
           </div>
-        </div>
-      <?php endif; ?>
+        <?php endif; ?>
+      </div>
     </div>
   </section>
 
   <?php foreach ($sections as $section): ?>
-    <section class="py-5">
+    <section class="py-5<?php echo ($section['section_type'] === 'slider' ? ' text-white' : ''); ?>">
       <div class="container">
-        <div class="row">
-            <div class="col-lg-7">
-            <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
-            <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
-            <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? '#'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
-          </div>
-        </div>
-        <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
-          <div class="row mt-4">
-              <div class="col-lg-5">
-              <?php if (!empty($section['video_url'])): ?>
-                <video class="section-media" autoplay muted loop playsinline>
-                  <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
-                </video>
-              <?php else: ?>
-                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="section-media">
+        <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
+        <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
+        <?php if ($section['section_type'] === 'slider'): ?>
+          <?php $sliderSettings = json_decode($section['settings'] ?? '', true); $slides = is_array($sliderSettings['slides'] ?? null) ? $sliderSettings['slides'] : []; ?>
+          <?php if (!empty($slides)): ?>
+            <div id="sectionSlider<?php echo (int)$section['id']; ?>" class="carousel slide text-white" data-bs-ride="carousel">
+              <div class="carousel-inner rounded-4 overflow-hidden">
+                <?php foreach ($slides as $index => $slideData): ?>
+                  <?php $slideUrl = is_array($slideData) ? ($slideData['url'] ?? '') : $slideData; ?>
+                  <?php $slideLink = is_array($slideData) ? trim($slideData['link'] ?? '') : ''; ?>
+                  <?php if ($slideLink === '') { $slideLink = trim($section['button_link'] ?? ''); } ?>
+                  <div class="carousel-item<?php echo $index === 0 ? ' active' : ''; ?>">
+                    <?php if ($slideLink !== ''): ?>
+                      <a href="<?php echo htmlspecialchars($slideLink); ?>">
+                        <img src="<?php echo htmlspecialchars($slideUrl); ?>" class="d-block w-100 slider-media" alt="Slide <?php echo $index + 1; ?>">
+                      </a>
+                    <?php else: ?>
+                      <img src="<?php echo htmlspecialchars($slideUrl); ?>" class="d-block w-100 slider-media" alt="Slide <?php echo $index + 1; ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($section['title']) || !empty($section['content'])): ?>
+                      <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3 text-white">
+                        <?php if (!empty($section['title'])): ?><h5><?php echo htmlspecialchars($section['title']); ?></h5><?php endif; ?>
+                        <?php if (!empty($section['content'])): ?><p><?php echo htmlspecialchars($section['content']); ?></p><?php endif; ?>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+              <?php if (count($slides) > 1): ?>
+                <button class="carousel-control-prev" type="button" data-bs-target="#sectionSlider<?php echo (int)$section['id']; ?>" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#sectionSlider<?php echo (int)$section['id']; ?>" data-bs-slide="next">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Next</span>
+                </button>
               <?php endif; ?>
             </div>
-          </div>
+          <?php endif; ?>
+        <?php else: ?>
+          <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
+            <div class="row mt-4">
+              <div class="col-lg-5">
+                <?php $sectionLink = trim($section['button_link'] ?? ''); ?>
+                <?php if (!empty($section['video_url'])): ?>
+                  <?php if ($sectionLink !== ''): ?><a href="<?php echo htmlspecialchars($sectionLink); ?>"><?php endif; ?>
+                    <video class="section-media" autoplay muted loop playsinline controls>
+                      <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
+                    </video>
+                  <?php if ($sectionLink !== ''): ?></a><?php endif; ?>
+                <?php else: ?>
+                  <?php if ($sectionLink !== ''): ?><a href="<?php echo htmlspecialchars($sectionLink); ?>"><?php endif; ?>
+                    <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="section-media">
+                  <?php if ($sectionLink !== ''): ?></a><?php endif; ?>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endif; ?>
         <?php endif; ?>
+        <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? '#'); ?>" class="btn btn-primary mt-4"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
       </div>
     </section>
   <?php endforeach; ?>

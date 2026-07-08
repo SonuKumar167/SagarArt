@@ -24,7 +24,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS `pages` (
   `hero_title` VARCHAR(255) DEFAULT NULL,
   `hero_text` TEXT DEFAULT NULL,
   `image_url` VARCHAR(255) DEFAULT NULL,
+  `hero_media_type` VARCHAR(20) DEFAULT 'image',
   `hero_video_url` VARCHAR(255) DEFAULT NULL,
+  `hero_bg_color` VARCHAR(7) DEFAULT '#4f46e5',
+  `hero_text_color` VARCHAR(7) DEFAULT '#ffffff',
   `show_in_menu` TINYINT(1) NOT NULL DEFAULT 1,
   `menu_order` INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -33,11 +36,31 @@ $conn->query("CREATE TABLE IF NOT EXISTS `services` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `title` VARCHAR(255) NOT NULL,
   `slug` VARCHAR(100) NOT NULL UNIQUE,
-  `summary` TEXT NOT NULL,
-  `content` TEXT NOT NULL,
+  `hero_title` VARCHAR(255) DEFAULT NULL,
+  `hero_text` TEXT DEFAULT NULL,
   `image_url` VARCHAR(255) DEFAULT NULL,
+  `hero_media_type` VARCHAR(20) DEFAULT 'image',
+  `hero_video_url` VARCHAR(255) DEFAULT NULL,
+  `hero_bg_color` VARCHAR(7) DEFAULT '#4f46e5',
+  `hero_text_color` VARCHAR(7) DEFAULT '#ffffff',
+  `show_in_menu` TINYINT(1) NOT NULL DEFAULT 1,
+  `menu_order` INT NOT NULL DEFAULT 0,
   `display_order` INT NOT NULL DEFAULT 0,
   `is_featured` TINYINT(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS `service_sections` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `service_slug` VARCHAR(100) NOT NULL,
+  `title` VARCHAR(255) DEFAULT NULL,
+  `content` TEXT DEFAULT NULL,
+  `section_type` VARCHAR(50) NOT NULL DEFAULT 'content',
+  `image_url` VARCHAR(255) DEFAULT NULL,
+  `video_url` VARCHAR(255) DEFAULT NULL,
+  `button_text` VARCHAR(255) DEFAULT NULL,
+  `button_link` VARCHAR(255) DEFAULT NULL,
+  `settings` TEXT DEFAULT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 $conn->query("CREATE TABLE IF NOT EXISTS `site_settings` (
@@ -76,6 +99,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS `page_sections` (
   `video_url` VARCHAR(255) DEFAULT NULL,
   `button_text` VARCHAR(255) DEFAULT NULL,
   `button_link` VARCHAR(255) DEFAULT NULL,
+  `settings` TEXT DEFAULT NULL,
   `sort_order` INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
@@ -123,7 +147,18 @@ function addColumnIfMissing($conn, $table, $column, $definition) {
 addColumnIfMissing($conn, 'pages', 'show_in_menu', 'TINYINT(1) NOT NULL DEFAULT 1');
 addColumnIfMissing($conn, 'pages', 'menu_order', 'INT NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'pages', 'hero_video_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'pages', 'hero_media_type', 'VARCHAR(20) DEFAULT "image"');
+addColumnIfMissing($conn, 'pages', 'hero_bg_color', 'VARCHAR(7) DEFAULT "#4f46e5"');
+addColumnIfMissing($conn, 'pages', 'hero_text_color', 'VARCHAR(7) DEFAULT "#ffffff"');
+addColumnIfMissing($conn, 'services', 'hero_title', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'services', 'hero_text', 'TEXT DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'image_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'services', 'hero_media_type', 'VARCHAR(20) DEFAULT "image"');
+addColumnIfMissing($conn, 'services', 'hero_video_url', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'services', 'hero_bg_color', 'VARCHAR(7) DEFAULT "#4f46e5"');
+addColumnIfMissing($conn, 'services', 'hero_text_color', 'VARCHAR(7) DEFAULT "#ffffff"');
+addColumnIfMissing($conn, 'services', 'show_in_menu', 'TINYINT(1) NOT NULL DEFAULT 1');
+addColumnIfMissing($conn, 'services', 'menu_order', 'INT NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'services', 'display_order', 'INT NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'services', 'is_featured', 'TINYINT(1) NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'menu_items', 'has_dropdown', 'TINYINT(1) NOT NULL DEFAULT 0');
@@ -156,11 +191,11 @@ $conn->query("INSERT INTO `pages` (slug, title, content, hero_title, hero_text, 
 // Seed default services only if table is empty to avoid re-creating on each request
 $serviceCount = $conn->query('SELECT COUNT(*) AS c FROM services')->fetch_assoc()['c'] ?? 0;
 if ((int)$serviceCount === 0) {
-        $conn->query("INSERT INTO `services` (title, slug, summary, content) VALUES
-            ('Web Design', 'web-design', 'Beautiful and modern interfaces for your brand.', 'We design responsive websites that feel premium and work perfectly across all devices.'),
-            ('Web Development', 'web-development', 'Reliable PHP and MySQL-based applications.', 'We develop custom PHP applications with fast load times and clean architecture.'),
-            ('SEO Optimization', 'seo-optimization', 'Boost your online visibility and organic traffic.', 'We improve your website structure, content, and metadata to rank higher in search results.'),
-            ('Brand Strategy', 'brand-strategy', 'Create a strong message and identity for your business.', 'We help shape your brand voice, positioning, and visual identity for lasting growth.')
+        $conn->query("INSERT INTO `services` (title, slug, hero_title, hero_text) VALUES
+            ('Web Design', 'web-design', 'Web Design', 'Beautiful and modern interfaces for your brand.'),
+            ('Web Development', 'web-development', 'Web Development', 'Reliable PHP and MySQL-based applications.'),
+            ('SEO Optimization', 'seo-optimization', 'SEO Optimization', 'Boost your online visibility and organic traffic.'),
+            ('Brand Strategy', 'brand-strategy', 'Brand Strategy', 'Create a strong message and identity for your business.')
             ON DUPLICATE KEY UPDATE title = VALUES(title)");
 }
 $conn->query("INSERT INTO `site_settings` (id, site_name, tagline, header_text, header_cta_text, header_cta_link, footer_about, footer_email, footer_phone, footer_address, footer_copyright, favicon_url, logo_url, meta_title, meta_description, facebook_url, instagram_url, twitter_url, youtube_url) VALUES (1, 'Sagar Art', 'Creative digital experiences that elevate brands.', 'We help businesses build modern digital products, websites, and growth-focused marketing experiences.', 'Get Started', 'contact.php', 'We craft thoughtful digital products and brand experiences for modern businesses.', 'hello@sagarart.com', '+91 98765 43210', 'Mumbai, India', '© 2026 Sagar Art. All rights reserved.', NULL, NULL, 'Sagar Art | Creative Digital Agency', 'We design and develop modern websites and digital experiences for brands that want to stand out.', 'https://facebook.com', 'https://instagram.com', 'https://twitter.com', 'https://youtube.com') ON DUPLICATE KEY UPDATE site_name = VALUES(site_name), tagline = VALUES(tagline), header_text = VALUES(header_text), header_cta_text = VALUES(header_cta_text), header_cta_link = VALUES(header_cta_link), footer_about = VALUES(footer_about), footer_email = VALUES(footer_email), footer_phone = VALUES(footer_phone), footer_address = VALUES(footer_address), footer_copyright = VALUES(footer_copyright), favicon_url = VALUES(favicon_url), logo_url = VALUES(logo_url), meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), facebook_url = VALUES(facebook_url), instagram_url = VALUES(instagram_url), twitter_url = VALUES(twitter_url), youtube_url = VALUES(youtube_url)");
@@ -196,8 +231,19 @@ function uploadFile($file) {
     return '';
 }
 
+function detectMediaType($path) {
+    $videoExtensions = ['mp4', 'mov', 'webm', 'ogv', 'm4v', 'avi', 'mkv'];
+    $path = trim($path);
+    if ($path === '') {
+        return 'image';
+    }
+    $parsedPath = parse_url($path, PHP_URL_PATH) ?: $path;
+    $extension = strtolower(pathinfo($parsedPath, PATHINFO_EXTENSION));
+    return in_array($extension, $videoExtensions, true) ? 'video' : 'image';
+}
+
 function getPageContent($conn, $slug) {
-    $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_video_url, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -273,12 +319,42 @@ function getFooterMenuItems($conn) {
 }
 
 function getServices($conn) {
-    $result = $conn->query('SELECT id, title, slug, summary, content, image_url, display_order, is_featured FROM services ORDER BY display_order ASC, id ASC');
+    $result = $conn->query('SELECT id, title, slug, hero_text, image_url, display_order, is_featured FROM services ORDER BY display_order ASC, id ASC');
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+function getServiceContent($conn, $slug) {
+    $stmt = $conn->prepare('SELECT id, slug, title, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order FROM services WHERE slug = ? LIMIT 1');
+    $stmt->bind_param('s', $slug);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
+}
+
+function getServiceSections($conn, $slug) {
+    $stmt = $conn->prepare('SELECT id, title, content, section_type, image_url, video_url, button_text, button_link, settings FROM service_sections WHERE service_slug = ? ORDER BY sort_order ASC, id ASC');
+    $stmt->bind_param('s', $slug);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+function filterServicesByIds($services, $ids) {
+    $ids = array_map('intval', (array)$ids);
+    if (empty($ids)) {
+        return [];
+    }
+    $filtered = [];
+    foreach ($services as $service) {
+        if (in_array((int)$service['id'], $ids, true)) {
+            $filtered[] = $service;
+        }
+    }
+    return $filtered;
+}
+
 function getServiceBySlug($conn, $slug) {
-    $stmt = $conn->prepare('SELECT id, title, slug, summary, content, image_url FROM services WHERE slug = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, title, slug, hero_text, image_url FROM services WHERE slug = ? LIMIT 1');
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $result = $stmt->get_result();

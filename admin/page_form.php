@@ -20,19 +20,23 @@ if ($deleteSlug !== '') {
 $page = null;
 $showForm = isset($_GET['new']) || $slug !== '';
 if ($slug !== '') {
-    $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_video_url, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $page = $stmt->get_result()->fetch_assoc();
 }
+$page = $page ?: [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
-    $content = trim($_POST['content'] ?? '');
+    $content = $page['content'] ?? '';
     $hero_title = trim($_POST['hero_title'] ?? '');
     $hero_text = trim($_POST['hero_text'] ?? '');
-    $hero_video_url = trim($_POST['existing_hero_video_url'] ?? '');
-    $image_url = trim($_POST['image_url'] ?? '');
+    $hero_video_url = trim($_POST['hero_video_url'] ?? $page['hero_video_url'] ?? '');
+    $image_url = trim($_POST['image_url'] ?? $page['image_url'] ?? '');
+    $hero_media_type = trim($_POST['hero_media_type'] ?? $page['hero_media_type'] ?? 'image');
+    $hero_bg_color = trim($_POST['hero_bg_color'] ?? $page['hero_bg_color'] ?? '#4f46e5');
+    $hero_text_color = trim($_POST['hero_text_color'] ?? $page['hero_text_color'] ?? '#ffffff');
     $show_in_menu = isset($_POST['show_in_menu']) ? 1 : 0;
     $menu_order = (int)($_POST['menu_order'] ?? 0);
     $existingSlug = trim($_POST['existing_slug'] ?? '');
@@ -42,34 +46,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $page_slug = slugify($title);
     }
 
-    if (!empty($_FILES['image_file']['name'])) {
-        $uploadedImage = uploadFile($_FILES['image_file']);
-        if ($uploadedImage !== '') {
-            $image_url = $uploadedImage;
+    if (!empty($_FILES['hero_media_file']['name'])) {
+        $uploadedMedia = uploadFile($_FILES['hero_media_file']);
+        if ($uploadedMedia !== '') {
+            if (detectMediaType($uploadedMedia) === 'video') {
+                $hero_video_url = $uploadedMedia;
+                $hero_media_type = 'video';
+                $image_url = '';
+            } else {
+                $image_url = $uploadedMedia;
+                $hero_media_type = 'image';
+                $hero_video_url = '';
+            }
         }
     }
 
-    if (!empty($_FILES['hero_video_file']['name'])) {
-        $uploadedVideo = uploadFile($_FILES['hero_video_file']);
-        if ($uploadedVideo !== '') {
-            $hero_video_url = $uploadedVideo;
-        }
+    if (!empty($hero_video_url) && detectMediaType($hero_video_url) === 'video') {
+        $hero_media_type = 'video';
+    } elseif (!empty($image_url)) {
+        $hero_media_type = detectMediaType($image_url);
     }
 
     if ($existingSlug !== '') {
-        $stmt = $conn->prepare('UPDATE pages SET slug = ?, title = ?, content = ?, hero_title = ?, hero_text = ?, image_url = ?, hero_video_url = ?, show_in_menu = ?, menu_order = ? WHERE slug = ?');
-        $stmt->bind_param('sssssssiis', $page_slug, $title, $content, $hero_title, $hero_text, $image_url, $hero_video_url, $show_in_menu, $menu_order, $existingSlug);
+        $stmt = $conn->prepare('UPDATE pages SET slug = ?, title = ?, content = ?, hero_title = ?, hero_text = ?, image_url = ?, hero_media_type = ?, hero_video_url = ?, hero_bg_color = ?, hero_text_color = ?, show_in_menu = ?, menu_order = ? WHERE slug = ?');
+        $stmt->bind_param('ssssssssssiss', $page_slug, $title, $content, $hero_title, $hero_text, $image_url, $hero_media_type, $hero_video_url, $hero_bg_color, $hero_text_color, $show_in_menu, $menu_order, $existingSlug);
         $stmt->execute();
         $success = 'Page updated successfully.';
     } else {
-        $stmt = $conn->prepare('INSERT INTO pages (slug, title, content, hero_title, hero_text, image_url, hero_video_url, show_in_menu, menu_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->bind_param('sssssssii', $page_slug, $title, $content, $hero_title, $hero_text, $image_url, $hero_video_url, $show_in_menu, $menu_order);
+        $stmt = $conn->prepare('INSERT INTO pages (slug, title, content, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->bind_param('ssssssssssii', $page_slug, $title, $content, $hero_title, $hero_text, $image_url, $hero_media_type, $hero_video_url, $hero_bg_color, $hero_text_color, $show_in_menu, $menu_order);
         $stmt->execute();
         $success = 'Page created successfully.';
     }
 
     $slug = $page_slug;
-    $page = ['slug' => $page_slug, 'title' => $title, 'content' => $content, 'hero_title' => $hero_title, 'hero_text' => $hero_text, 'image_url' => $image_url, 'hero_video_url' => $hero_video_url, 'show_in_menu' => $show_in_menu, 'menu_order' => $menu_order];
+    $page = ['slug' => $page_slug, 'title' => $title, 'content' => $content, 'hero_title' => $hero_title, 'hero_text' => $hero_text, 'image_url' => $image_url, 'hero_media_type' => $hero_media_type, 'hero_video_url' => $hero_video_url, 'hero_bg_color' => $hero_bg_color, 'hero_text_color' => $hero_text_color, 'show_in_menu' => $show_in_menu, 'menu_order' => $menu_order];
 }
 
 $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY menu_order ASC, id ASC');
@@ -129,25 +140,37 @@ $pages = $conn->query('SELECT id, slug, title, show_in_menu FROM pages ORDER BY 
                     <label class="form-label">Hero Text</label>
                     <textarea name="hero_text" class="form-control" rows="3"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></textarea>
                   </div>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label">Hero Background Color</label>
+                        <input type="color" name="hero_bg_color" class="form-control form-control-color" value="<?php echo htmlspecialchars($page['hero_bg_color'] ?? '#4f46e5'); ?>">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label">Hero Text Color</label>
+                        <input type="color" name="hero_text_color" class="form-control form-control-color" value="<?php echo htmlspecialchars($page['hero_text_color'] ?? '#ffffff'); ?>">
+                      </div>
+                    </div>
+                  </div>
                   <div class="mb-3">
-                    <label class="form-label">Hero Video Upload</label>
-                    <input type="file" name="hero_video_file" accept="video/*" class="form-control">
-                    <?php if (!empty($page['hero_video_url'])): ?>
-                      <small class="text-muted d-block mt-2">Current video: <a href="../<?php echo htmlspecialchars($page['hero_video_url']); ?>" target="_blank">View file</a></small>
+                    <label class="form-label">Hero Background Media</label>
+                    <input type="file" name="hero_media_file" accept="image/*,video/*" class="form-control">
+                    <?php if (!empty($page['image_url'])): ?>
+                      <small class="text-muted d-block mt-2">Current background image: <a href="../<?php echo htmlspecialchars($page['image_url']); ?>" target="_blank">View file</a></small>
                     <?php endif; ?>
-                    <input type="hidden" name="existing_hero_video_url" value="<?php echo htmlspecialchars($page['hero_video_url'] ?? ''); ?>">
+                    <?php if (!empty($page['hero_video_url'])): ?>
+                      <small class="text-muted d-block">Current hero video: <a href="../<?php echo htmlspecialchars($page['hero_video_url']); ?>" target="_blank">View file</a></small>
+                    <?php endif; ?>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">Content</label>
-                    <textarea name="content" class="form-control" rows="6"><?php echo htmlspecialchars($page['content'] ?? ''); ?></textarea>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Hero Image</label>
-                    <input type="file" name="image_file" class="form-control">
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Image URL / Path</label>
+                    <label class="form-label">Background Image URL / Path</label>
                     <input type="text" name="image_url" class="form-control" value="<?php echo htmlspecialchars($page['image_url'] ?? ''); ?>">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Hero Video URL / Path</label>
+                    <input type="text" name="hero_video_url" class="form-control" value="<?php echo htmlspecialchars($page['hero_video_url'] ?? ''); ?>">
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Show in Header Menu</label>

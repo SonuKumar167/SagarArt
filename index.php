@@ -47,36 +47,19 @@ if (empty($featuredServices)) {
 <body>
   <?php include 'includes/header.php'; ?>
 
-  <section class="hero-section text-white d-flex align-items-center" style="background-image: linear-gradient(135deg, rgba(13,110,253,0.9), rgba(102,16,242,0.9)), url('<?php echo htmlspecialchars($page['image_url'] ?? ''); ?>'); background-size: cover; background-position: center;">
+  <section class="hero-section text-white d-flex align-items-center" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($page['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($page['image_url'] ?? ''); ?>'); background-size: cover; background-position: center; color: <?php echo htmlspecialchars($page['hero_text_color'] ?? '#ffffff'); ?>;">
     <div class="container">
-      <div class="row align-items-center">
+      <div class="row align-items-center gy-4">
         <div class="col-lg-7">
           <h1 class="display-4 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
           <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
           <a href="services.php" class="btn btn-light btn-lg">Explore Services</a>
         </div>
         <?php if (!empty($page['hero_video_url'])): ?>
-          <div class="col-lg-5 mt-4 mt-lg-0">
+          <div class="col-lg-5">
             <video class="hero-video shadow" autoplay muted loop playsinline controls>
               <source src="<?php echo htmlspecialchars($page['hero_video_url']); ?>" type="video/mp4">
             </video>
-          </div>
-        <?php endif; ?>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="py-5">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6">
-          <h2><?php echo htmlspecialchars($page['title']); ?></h2>
-          <p><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
-        </div>
-        <?php if (!empty($page['image_url'])): ?>
-          <div class="col-lg-6">
-            <img src="<?php echo htmlspecialchars($page['image_url'] ?? ''); ?>" alt="Hero" class="img-fluid rounded shadow">
           </div>
         <?php endif; ?>
       </div>
@@ -84,26 +67,45 @@ if (empty($featuredServices)) {
   </section>
 
   <?php if (!empty($sliderSections)): ?>
-    <section class="py-5 bg-light">
+    <section class="py-5 bg-light text-white">
       <div class="container">
         <div id="homeSlider" class="carousel slide" data-bs-ride="carousel">
           <div class="carousel-inner">
-            <?php foreach ($sliderSections as $index => $slide): ?>
-              <div class="carousel-item <?php echo $index === 0 ? 'active' : ''; ?>">
-                <?php if (!empty($slide['video_url'])): ?>
-                  <video class="d-block w-100 rounded shadow slider-media" autoplay muted loop playsinline>
-                    <source src="<?php echo htmlspecialchars($slide['video_url']); ?>" type="video/mp4">
-                  </video>
-                <?php else: ?>
-                  <img src="<?php echo htmlspecialchars($slide['image_url'] ?? ''); ?>" class="d-block w-100 rounded shadow slider-media" alt="<?php echo htmlspecialchars($slide['title'] ?? 'Slide'); ?>">
-                <?php endif; ?>
-                <?php if (!empty($slide['title']) || !empty($slide['content'])): ?>
-                  <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-                    <?php if (!empty($slide['title'])): ?><h5><?php echo htmlspecialchars($slide['title']); ?></h5><?php endif; ?>
-                    <?php if (!empty($slide['content'])): ?><p><?php echo htmlspecialchars($slide['content']); ?></p><?php endif; ?>
-                  </div>
-                <?php endif; ?>
-              </div>
+            <?php foreach ($sliderSections as $sIndex => $section): ?>
+              <?php
+                $settingsDecoded = json_decode($section['settings'] ?? '', true) ?: [];
+                $slides = is_array($settingsDecoded['slides'] ?? null) ? $settingsDecoded['slides'] : [];
+                // fallback to single image/video columns if settings empty
+                if (empty($slides)) {
+                    if (!empty($section['video_url'])) {
+                        $slides = [$section['video_url']];
+                    } elseif (!empty($section['image_url'])) {
+                        $slides = [$section['image_url']];
+                    }
+                }
+              ?>
+              <?php foreach ($slides as $index => $slideData): ?>
+                <?php $slideUrl = is_array($slideData) ? ($slideData['url'] ?? '') : $slideData; ?>
+                <?php $slideLink = is_array($slideData) ? trim($slideData['link'] ?? '') : (!empty($section['button_link']) ? $section['button_link'] : ''); ?>
+                <div class="carousel-item <?php echo ($sIndex === 0 && $index === 0) ? 'active' : ''; ?>">
+                  <?php $mediaType = detectMediaType($slideUrl); ?>
+                    <?php if ($slideLink !== ''): ?><a href="<?php echo htmlspecialchars($slideLink); ?>" target="_self"><?php endif; ?>
+                    <?php if ($mediaType === 'video'): ?>
+                      <video class="d-block w-100 rounded shadow slider-media" autoplay muted loop playsinline>
+                        <source src="<?php echo htmlspecialchars($slideUrl); ?>" type="video/mp4">
+                      </video>
+                    <?php else: ?>
+                      <img src="<?php echo htmlspecialchars($slideUrl); ?>" class="d-block w-100 rounded shadow slider-media" alt="<?php echo htmlspecialchars($section['title'] ?? 'Slide'); ?>">
+                    <?php endif; ?>
+                    <?php if ($slideLink !== ''): ?></a><?php endif; ?>
+                    <?php if (!empty($section['title']) || !empty($section['content'])): ?>
+                      <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3 text-white">
+                      <?php if (!empty($section['title'])): ?><h5><?php echo htmlspecialchars($section['title']); ?></h5><?php endif; ?>
+                      <?php if (!empty($section['content'])): ?><p class="text-white"><?php echo htmlspecialchars($section['content']); ?></p><?php endif; ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
             <?php endforeach; ?>
           </div>
           <button class="carousel-control-prev" type="button" data-bs-target="#homeSlider" data-bs-slide="prev">
@@ -128,12 +130,17 @@ if (empty($featuredServices)) {
           </div>
           <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
             <div class="col-lg-5">
+              <?php $sectionLink = trim($section['button_link'] ?? ''); ?>
               <?php if (!empty($section['video_url'])): ?>
-                <video class="img-fluid rounded shadow" autoplay muted loop playsinline>
-                  <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
-                </video>
+                <?php if ($sectionLink !== ''): ?><a href="<?php echo htmlspecialchars($sectionLink); ?>"><?php endif; ?>
+                  <video class="img-fluid rounded shadow" autoplay muted loop playsinline>
+                    <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
+                  </video>
+                <?php if ($sectionLink !== ''): ?></a><?php endif; ?>
               <?php else: ?>
-                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section image" class="img-fluid rounded shadow">
+                <?php if ($sectionLink !== ''): ?><a href="<?php echo htmlspecialchars($sectionLink); ?>"><?php endif; ?>
+                  <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section image" class="img-fluid rounded shadow">
+                <?php if ($sectionLink !== ''): ?></a><?php endif; ?>
               <?php endif; ?>
             </div>
           <?php endif; ?>
@@ -187,7 +194,7 @@ if (empty($featuredServices)) {
                   <?php endif; ?>
                   <div class="card-body">
                     <h5 class="card-title"><?php echo htmlspecialchars($service['title']); ?></h5>
-                    <p class="card-text"><?php echo htmlspecialchars($service['summary']); ?></p>
+                    <p class="card-text"><?php echo htmlspecialchars($service['hero_text']); ?></p>
                     <a href="service.php?slug=<?php echo urlencode($service['slug']); ?>" class="stretched-link text-decoration-none">Learn More</a>
                   </div>
                 </div>

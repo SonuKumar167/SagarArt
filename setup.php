@@ -11,7 +11,11 @@ $sql[] = "CREATE TABLE IF NOT EXISTS `pages` (
   `content` TEXT NOT NULL,
   `hero_title` VARCHAR(255) DEFAULT NULL,
   `hero_text` TEXT DEFAULT NULL,
-  `image_url` VARCHAR(255) DEFAULT NULL
+  `image_url` VARCHAR(255) DEFAULT NULL,
+  `hero_media_type` VARCHAR(20) DEFAULT 'image',
+  `hero_video_url` VARCHAR(255) DEFAULT NULL,
+  `hero_bg_color` VARCHAR(7) DEFAULT '#4f46e5',
+  `hero_text_color` VARCHAR(7) DEFAULT '#ffffff'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 $sql[] = "CREATE TABLE IF NOT EXISTS `services` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,

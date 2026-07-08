@@ -35,15 +35,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
   <?php include 'includes/header.php'; ?>
 
-  <section class="page-hero text-white d-flex align-items-center">
+  <section class="page-hero text-white d-flex align-items-center" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($page['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($page['image_url'] ?? ''); ?>'); background-size: cover; background-position: center; color: <?php echo htmlspecialchars($page['hero_text_color'] ?? '#ffffff'); ?>;">
     <div class="container">
-      <h1 class="display-5 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
-      <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
-      <?php if (!empty($page['hero_video_url'])): ?>
-        <video class="hero-video mt-4" autoplay muted loop playsinline controls>
-          <source src="<?php echo htmlspecialchars($page['hero_video_url']); ?>" type="video/mp4">
-        </video>
-      <?php endif; ?>
+      <div class="row align-items-center gy-4">
+        <div class="col-lg-7">
+          <h1 class="display-5 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
+          <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
+        </div>
+        <?php if (!empty($page['hero_video_url'])): ?>
+          <div class="col-lg-5">
+            <video class="hero-video shadow" autoplay muted loop playsinline controls>
+              <source src="<?php echo htmlspecialchars($page['hero_video_url']); ?>" type="video/mp4">
+            </video>
+          </div>
+        <?php endif; ?>
+      </div>
     </div>
   </section>
 
@@ -51,8 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
       <div class="row g-4">
         <div class="col-lg-7">
-          <h2><?php echo htmlspecialchars($page['title']); ?></h2>
-          <p><?php echo nl2br(htmlspecialchars($page['content'])); ?></p>
           <?php if (isset($success)): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
           <?php endif; ?>
@@ -100,12 +104,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
           <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
             <div class="col-lg-5">
+              <?php $sectionLink = trim($section['button_link'] ?? ''); ?>
               <?php if (!empty($section['video_url'])): ?>
-                <video class="img-fluid rounded shadow" autoplay muted loop controls>
-                  <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
-                </video>
+                <?php if ($sectionLink !== ''): ?><a href="<?php echo htmlspecialchars($sectionLink); ?>"><?php endif; ?>
+                  <video class="img-fluid rounded shadow" autoplay muted loop controls>
+                    <source src="<?php echo htmlspecialchars($section['video_url']); ?>" type="video/mp4">
+                  </video>
+                <?php if ($sectionLink !== ''): ?></a><?php endif; ?>
               <?php else: ?>
-                <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="img-fluid rounded shadow">
+                <?php if ($sectionLink !== ''): ?><a href="<?php echo htmlspecialchars($sectionLink); ?>"><?php endif; ?>
+                  <img src="<?php echo htmlspecialchars($section['image_url']); ?>" alt="Section" class="img-fluid rounded shadow">
+                <?php if ($sectionLink !== ''): ?></a><?php endif; ?>
               <?php endif; ?>
             </div>
           <?php endif; ?>
