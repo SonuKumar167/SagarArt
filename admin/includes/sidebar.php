@@ -10,11 +10,17 @@ $navItems = [
     ['label' => 'Messages', 'url' => 'contact_submissions.php'],
 ];
 ?>
+<button class="sidebar-toggle d-lg-none" type="button" aria-label="Toggle navigation">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+<div class="admin-sidebar-backdrop d-lg-none"></div>
 <aside class="admin-sidebar">
   <div class="sidebar-brand">
     <div>
       <h5 class="mb-1">Sagar Art</h5>
-      <p class="mb-0 small text-muted">Admin Workspace</p>
+      <p class="mb-0 small text-white-50">Admin Workspace</p>
     </div>
   </div>
   <nav class="sidebar-nav">
@@ -31,3 +37,29 @@ $navItems = [
     <a href="logout.php" class="btn btn-outline-light btn-sm w-100">Logout</a>
   </div>
 </aside>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  const toggle = document.querySelector('.sidebar-toggle');
+  const sidebar = document.querySelector('.admin-sidebar');
+  const backdrop = document.querySelector('.admin-sidebar-backdrop');
+  if (!toggle || !sidebar) return;
+
+  const closeSidebar = function () {
+    document.body.classList.remove('admin-sidebar-open');
+  };
+
+  toggle.addEventListener('click', function () {
+    document.body.classList.toggle('admin-sidebar-open');
+  });
+
+  if (backdrop) {
+    backdrop.addEventListener('click', closeSidebar);
+  }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      closeSidebar();
+    }
+  });
+});
+</script>

@@ -9,7 +9,8 @@ $servicesById = [];
 foreach ($services as $s) {
   $servicesById[(int)$s['id']] = $s;
 }
-$sections = getPageSections($conn, 'home');
+$sections = function_exists('getPageSections') ? getPageSections($conn, 'home') : [];
+$sections = is_array($sections) ? $sections : [];
 $pageTitle = !empty($siteSettings['meta_title']) ? $siteSettings['meta_title'] : (($page['title'] ?? 'Home') . ' - ' . ($siteSettings['site_name'] ?? 'Sagar Art'));
 $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['meta_description'] : substr(strip_tags($page['content'] ?? ''), 0, 160);
 $sliderSections = [];
@@ -204,25 +205,6 @@ if (empty($featuredServices)) {
         </div>
       </section>
     <?php endforeach; ?>
-  <?php else: ?>
-    <section class="py-5 bg-light">
-      <div class="container">
-        <h2 class="text-center mb-4">Featured Services</h2>
-        <div class="row g-4">
-          <?php foreach (array_slice($services, 0, 4) as $service): ?>
-            <div class="col-md-6 col-lg-3">
-              <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title"><?php echo htmlspecialchars($service['title']); ?></h5>
-                  <p class="card-text"><?php echo htmlspecialchars($service['summary']); ?></p>
-                  <a href="service.php?slug=<?php echo urlencode($service['slug']); ?>" class="btn btn-outline-primary">View Details</a>
-                </div>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-    </section>
   <?php endif; ?>
 
   <?php include 'includes/footer.php'; ?>
