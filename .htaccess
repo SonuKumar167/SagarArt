@@ -1,19 +1,21 @@
 RewriteEngine On
 RewriteBase /
 
-# Let real files and folders load normally
-RewriteCond %{REQUEST_FILENAME} -d [OR]
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^ - [L]
+# Serve real files and folders directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [END]
 
-# Route slug-based pages to the main entry point with a query string
-RewriteRule ^page/([^/]+)/?$ page?slug=$1 [L,QSA,NC]
-RewriteRule ^service/([^/]+)/?$ service?slug=$1 [L,QSA,NC]
+# Slug pages
+RewriteRule ^page/([^/]+)/?$ page.php?slug=$1 [END,NC,QSA]
+RewriteRule ^service/([^/]+)/?$ service.php?slug=$1 [END,NC,QSA]
 
-# Route base pages
-RewriteRule ^about/?$ index.php?route=about [L,QSA]
-RewriteRule ^contact/?$ index.php?route=contact [L,QSA]
-RewriteRule ^services/?$ index.php?route=services [L,QSA]
+# Static pages
+RewriteRule ^reviews/?$ reviews.php [END,NC,QSA]
+RewriteRule ^admin/login/?$ admin/login.php [END,NC,QSA]
+RewriteRule ^about/?$ index.php?route=about [END,QSA]
+RewriteRule ^contact/?$ index.php?route=contact [END,QSA]
+RewriteRule ^services/?$ index.php?route=services [END,QSA]
 
-# Fallback for other clean URLs
-RewriteRule ^(.*)$ index.php?route=$1 [L,QSA]
+# Fallback
+RewriteRule ^(.+)$ index.php?route=$1 [END,QSA]

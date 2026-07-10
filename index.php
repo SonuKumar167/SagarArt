@@ -25,6 +25,16 @@ if ($routeName === 'page') {
     exit;
 }
 
+if (in_array($routeName, ['review', 'reviews'], true)) {
+    require __DIR__ . '/reviews.php';
+    exit;
+}
+
+if (in_array($routeName, ['admin/login'], true)) {
+    require __DIR__ . '/admin/login.php';
+    exit;
+}
+
 if (in_array($routeName, ['about', 'contact', 'services'], true)) {
     require __DIR__ . '/' . $routeName . '.php';
     exit;

@@ -215,58 +215,58 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
         return $text ?: 'page';
     }
 
-function normalizeRoute($link, $default = '')
-{
-    $link = trim((string)$link);
+    function normalizeRoute($link, $default = '')
+    {
+        $link = trim((string)$link);
 
-    if ($link === '') {
-        return $default;
+        if ($link === '') {
+            return $default;
+        }
+
+        // External URLs
+        if (
+            preg_match('~^(https?:)?//~i', $link) ||
+            strpos($link, 'mailto:') === 0 ||
+            strpos($link, 'tel:') === 0 ||
+            strpos($link, '#') === 0 ||
+            strpos($link, 'javascript:') === 0
+        ) {
+            return $link;
+        }
+
+        $parsed = parse_url($link);
+
+        $path = $parsed['path'] ?? '';
+        $query = $parsed['query'] ?? '';
+        $fragment = $parsed['fragment'] ?? '';
+
+        // Remove .php extension
+        $path = preg_replace('/\.php$/i', '', $path);
+
+        // Remove leading/trailing slash
+        $path = trim($path, '/');
+
+        // Treat index.php as homepage
+        if ($path === 'index') {
+            $path = '';
+        }
+
+        $result = '/' . $path;
+
+        if ($result === '/') {
+            $result = '/';
+        }
+
+        if (!empty($query)) {
+            $result .= '?' . $query;
+        }
+
+        if (!empty($fragment)) {
+            $result .= '#' . $fragment;
+        }
+
+        return $result;
     }
-
-    // External URLs
-    if (
-        preg_match('~^(https?:)?//~i', $link) ||
-        strpos($link, 'mailto:') === 0 ||
-        strpos($link, 'tel:') === 0 ||
-        strpos($link, '#') === 0 ||
-        strpos($link, 'javascript:') === 0
-    ) {
-        return $link;
-    }
-
-    $parsed = parse_url($link);
-
-    $path = $parsed['path'] ?? '';
-    $query = $parsed['query'] ?? '';
-    $fragment = $parsed['fragment'] ?? '';
-
-    // Remove .php extension
-    $path = preg_replace('/\.php$/i', '', $path);
-
-    // Remove leading/trailing slash
-    $path = trim($path, '/');
-
-    // Treat index.php as homepage
-    if ($path === 'index') {
-        $path = '';
-    }
-
-    $result = '/' . $path;
-
-    if ($result === '/') {
-        $result = '/';
-    }
-
-    if (!empty($query)) {
-        $result .= '?' . $query;
-    }
-
-    if (!empty($fragment)) {
-        $result .= '#' . $fragment;
-    }
-
-    return $result;
-}
 
     function uploadFile($file) {
         if (!isset($file['tmp_name']) || empty($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
@@ -376,7 +376,7 @@ function normalizeRoute($link, $default = '')
     }
 
     function getFooterMenuItems($conn) {
-        $result = $conn->query('SELECT label, link FROM menu_items WHERE is_active = 1 AND show_in_footer = 1 ORDER BY menu_order ASC, id ASC');
+        $result = $conn->query('SELECT label, link FROM menu_items WHERE show_in_footer = 1 ORDER BY menu_order ASC, id ASC');
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
