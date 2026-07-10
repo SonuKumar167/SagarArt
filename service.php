@@ -29,12 +29,16 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
 <body>
   <?php include 'includes/header.php'; ?>
 
-  <section class="page-hero text-white d-flex align-items-center" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($service['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($service['image_url'] ?? ''); ?>'); background-size: auto, cover; background-repeat: no-repeat; background-position: center center; color: <?php echo htmlspecialchars($service['hero_text_color'] ?? '#ffffff'); ?>;">
+  <section class="page-hero text-white d-flex align-items-center" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($service['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($service['image_url'] ?? ''); ?>'); background-size: cover; background-repeat: no-repeat; background-position: center center; color: <?php echo htmlspecialchars($service['hero_text_color'] ?? '#ffffff'); ?>;">
     <div class="container">
       <div class="row align-items-center gy-4">
         <div class="col-lg-7">
           <h1 class="display-5 fw-bold"><?php echo htmlspecialchars($service['hero_title'] ?? $service['title']); ?></h1>
           <p class="lead"><?php echo htmlspecialchars($service['hero_text'] ?? ''); ?></p>
+          <?php $heroButtonText = trim($service['button_text'] ?? ''); $heroButtonLink = trim($service['button_link'] ?? ''); ?>
+          <?php if ($heroButtonText !== ''): ?>
+            <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg"><?php echo htmlspecialchars($heroButtonText); ?></a>
+          <?php endif; ?>
           <?php if (!empty($service['hero_video_url'])): ?>
             <div class="mt-4 d-none d-lg-block"></div>
           <?php endif; ?>

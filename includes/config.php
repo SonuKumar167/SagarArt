@@ -150,6 +150,8 @@ addColumnIfMissing($conn, 'pages', 'hero_video_url', 'VARCHAR(255) DEFAULT NULL'
 addColumnIfMissing($conn, 'pages', 'hero_media_type', 'VARCHAR(20) DEFAULT "image"');
 addColumnIfMissing($conn, 'pages', 'hero_bg_color', 'VARCHAR(7) DEFAULT "#4f46e5"');
 addColumnIfMissing($conn, 'pages', 'hero_text_color', 'VARCHAR(7) DEFAULT "#ffffff"');
+addColumnIfMissing($conn, 'pages', 'button_text', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'pages', 'button_link', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'hero_title', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'hero_text', 'TEXT DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'image_url', 'VARCHAR(255) DEFAULT NULL');
@@ -157,6 +159,8 @@ addColumnIfMissing($conn, 'services', 'hero_media_type', 'VARCHAR(20) DEFAULT "i
 addColumnIfMissing($conn, 'services', 'hero_video_url', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'hero_bg_color', 'VARCHAR(7) DEFAULT "#4f46e5"');
 addColumnIfMissing($conn, 'services', 'hero_text_color', 'VARCHAR(7) DEFAULT "#ffffff"');
+addColumnIfMissing($conn, 'services', 'button_text', 'VARCHAR(255) DEFAULT NULL');
+addColumnIfMissing($conn, 'services', 'button_link', 'VARCHAR(255) DEFAULT NULL');
 addColumnIfMissing($conn, 'services', 'show_in_menu', 'TINYINT(1) NOT NULL DEFAULT 1');
 addColumnIfMissing($conn, 'services', 'menu_order', 'INT NOT NULL DEFAULT 0');
 addColumnIfMissing($conn, 'services', 'display_order', 'INT NOT NULL DEFAULT 0');
@@ -243,7 +247,7 @@ function detectMediaType($path) {
 }
 
 function getPageContent($conn, $slug) {
-    $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, slug, title, content, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, button_text, button_link, show_in_menu, menu_order FROM pages WHERE slug = ? LIMIT 1');
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -319,12 +323,12 @@ function getFooterMenuItems($conn) {
 }
 
 function getServices($conn) {
-    $result = $conn->query('SELECT id, title, slug, hero_text, image_url, display_order, is_featured FROM services ORDER BY display_order ASC, id ASC');
+    $result = $conn->query('SELECT id, title, slug, hero_text, image_url, button_text, button_link, display_order, is_featured FROM services ORDER BY display_order ASC, id ASC');
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
 function getServiceContent($conn, $slug) {
-    $stmt = $conn->prepare('SELECT id, slug, title, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order FROM services WHERE slug = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, slug, title, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, button_text, button_link, show_in_menu, menu_order FROM services WHERE slug = ? LIMIT 1');
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $result = $stmt->get_result();

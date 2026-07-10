@@ -53,8 +53,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   };
 
+  const isMobileMenu = function () {
+    return window.innerWidth < 992;
+  };
+
+  const shouldCloseOnLinkClick = function (link) {
+    if (!isMobileMenu()) {
+      return false;
+    }
+
+    return !link.closest('.dropdown-toggle') && !link.closest('.dropdown-menu');
+  };
+
   toggler.addEventListener('click', function () {
-    if (window.innerWidth < 992) {
+    if (isMobileMenu()) {
       if (navbar.classList.contains('show')) {
         collapse.hide();
       } else {
@@ -65,14 +77,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   navbar.querySelectorAll('a').forEach(function (link) {
     link.addEventListener('click', function () {
-      if (window.innerWidth < 992) {
+      if (shouldCloseOnLinkClick(link)) {
         closeNavbar();
       }
     });
   });
 
   document.addEventListener('click', function (event) {
-    if (window.innerWidth < 992 && navbar.classList.contains('show') && !navbar.contains(event.target) && !toggler.contains(event.target)) {
+    if (isMobileMenu() && navbar.classList.contains('show') && !navbar.contains(event.target) && !toggler.contains(event.target)) {
       closeNavbar();
     }
   });

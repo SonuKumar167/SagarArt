@@ -54,7 +54,10 @@ if (empty($featuredServices)) {
         <div class="col-lg-7">
           <h1 class="display-4 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
           <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
-          <a href="/services" class="btn btn-light btn-lg">Explore Services</a>
+          <?php $heroButtonText = trim($page['button_text'] ?? ''); $heroButtonLink = trim($page['button_link'] ?? ''); ?>
+          <?php if ($heroButtonText !== ''): ?>
+            <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg"><?php echo htmlspecialchars($heroButtonText); ?></a>
+          <?php endif; ?>
         </div>
         <?php if (!empty($page['hero_video_url'])): ?>
           <div class="col-lg-5">

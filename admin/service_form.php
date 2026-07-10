@@ -38,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hero_text_color = trim($_POST['hero_text_color'] ?? $service['hero_text_color'] ?? '#ffffff');
     $show_in_menu = isset($_POST['show_in_menu']) ? 1 : 0;
     $menu_order = (int)($_POST['menu_order'] ?? 0);
+    $button_text = trim($_POST['button_text'] ?? $service['button_text'] ?? '');
+    $button_link = trim($_POST['button_link'] ?? $service['button_link'] ?? '');
     $existingSlug = trim($_POST['existing_slug'] ?? '');
     $service_slug = trim($_POST['slug'] ?? '');
 
@@ -67,21 +69,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($existingSlug !== '') {
-        $stmt = $conn->prepare('UPDATE services SET slug = ?, title = ?, hero_title = ?, hero_text = ?, image_url = ?, hero_media_type = ?, hero_video_url = ?, hero_bg_color = ?, hero_text_color = ?, show_in_menu = ?, menu_order = ? WHERE slug = ?');
-        $types = str_repeat('s', 9) . 'iis';
-        $stmt->bind_param($types, $service_slug, $title, $hero_title, $hero_text, $image_url, $hero_media_type, $hero_video_url, $hero_bg_color, $hero_text_color, $show_in_menu, $menu_order, $existingSlug);
+        $stmt = $conn->prepare('UPDATE services SET slug = ?, title = ?, hero_title = ?, hero_text = ?, image_url = ?, hero_media_type = ?, hero_video_url = ?, hero_bg_color = ?, hero_text_color = ?, button_text = ?, button_link = ?, show_in_menu = ?, menu_order = ? WHERE slug = ?');
+        $types = str_repeat('s', 11) . 'iis';
+        $stmt->bind_param($types, $service_slug, $title, $hero_title, $hero_text, $image_url, $hero_media_type, $hero_video_url, $hero_bg_color, $hero_text_color, $button_text, $button_link, $show_in_menu, $menu_order, $existingSlug);
         $stmt->execute();
         $success = 'Service updated successfully.';
     } else {
-        $stmt = $conn->prepare('INSERT INTO services (slug, title, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, show_in_menu, menu_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $types = str_repeat('s', 9) . 'ii';
-        $stmt->bind_param($types, $service_slug, $title, $hero_title, $hero_text, $image_url, $hero_media_type, $hero_video_url, $hero_bg_color, $hero_text_color, $show_in_menu, $menu_order);
+        $stmt = $conn->prepare('INSERT INTO services (slug, title, hero_title, hero_text, image_url, hero_media_type, hero_video_url, hero_bg_color, hero_text_color, button_text, button_link, show_in_menu, menu_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $types = str_repeat('s', 11) . 'ii';
+        $stmt->bind_param($types, $service_slug, $title, $hero_title, $hero_text, $image_url, $hero_media_type, $hero_video_url, $hero_bg_color, $hero_text_color, $button_text, $button_link, $show_in_menu, $menu_order);
         $stmt->execute();
         $success = 'Service created successfully.';
     }
 
     $slug = $service_slug;
-    $service = ['slug' => $service_slug, 'title' => $title, 'hero_title' => $hero_title, 'hero_text' => $hero_text, 'image_url' => $image_url, 'hero_media_type' => $hero_media_type, 'hero_video_url' => $hero_video_url, 'hero_bg_color' => $hero_bg_color, 'hero_text_color' => $hero_text_color, 'show_in_menu' => $show_in_menu, 'menu_order' => $menu_order];
+    $service = ['slug' => $service_slug, 'title' => $title, 'hero_title' => $hero_title, 'hero_text' => $hero_text, 'image_url' => $image_url, 'hero_media_type' => $hero_media_type, 'hero_video_url' => $hero_video_url, 'hero_bg_color' => $hero_bg_color, 'hero_text_color' => $hero_text_color, 'button_text' => $button_text, 'button_link' => $button_link, 'show_in_menu' => $show_in_menu, 'menu_order' => $menu_order];
 }
 
 $services = $conn->query('SELECT id, slug, title, show_in_menu FROM services ORDER BY menu_order ASC, id ASC');
@@ -140,6 +142,16 @@ $services = $conn->query('SELECT id, slug, title, show_in_menu FROM services ORD
                   <div class="mb-3">
                     <label class="form-label">Hero Text</label>
                     <textarea name="hero_text" class="form-control" rows="3"><?php echo htmlspecialchars($service['hero_text'] ?? ''); ?></textarea>
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Button Text</label>
+                      <input type="text" name="button_text" class="form-control" value="<?php echo htmlspecialchars($service['button_text'] ?? ''); ?>" placeholder="e.g. Book Now">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Button Link</label>
+                      <input type="text" name="button_link" class="form-control" value="<?php echo htmlspecialchars($service['button_link'] ?? ''); ?>" placeholder="e.g. contact.php">
+                    </div>
                   </div>
                   <div class="row g-3">
                     <div class="col-md-6">

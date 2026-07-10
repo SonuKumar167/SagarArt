@@ -76,6 +76,23 @@ a {
   padding: 0.85rem 1.25rem;
 }
 
+@media (max-width: 991.98px) {
+  .navbar .dropdown-menu {
+    position: static;
+    display: none;
+    margin-top: 0.25rem;
+    padding: 0.35rem 0 0.15rem 0.75rem;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .navbar .dropdown-menu.show,
+  .navbar .dropdown.show .dropdown-menu {
+    display: block;
+  }
+}
+
 .navbar .dropdown-item:hover {
   background: rgba(59, 130, 246, 0.08);
 }
@@ -99,11 +116,17 @@ a {
 .page-hero {
   position: relative;
   overflow: hidden;
-  padding: 6rem 0;
+  padding: 2rem 0;
+  min-height: 500px;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(59, 130, 246, 0.93));
-  background-size: auto, cover;
-  background-repeat: no-repeat;
-  background-position: center center;
+  background-size: cover, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-attachment: scroll;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  background-origin: border-box;
+  background-clip: border-box;
 }
 
 .hero-section::before,
@@ -111,6 +134,7 @@ a {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.28), transparent 28%),
               radial-gradient(circle at 85% 10%, rgba(255, 255, 255, 0.16), transparent 20%);
 }
@@ -119,6 +143,17 @@ a {
 .page-hero .container {
   position: relative;
   z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 100%;
+  width: 100%;
+}
+
+.hero-section .row,
+.page-hero .row {
+  width: 100%;
+  margin: 0;
 }
 
 .hero-section h1,
@@ -135,7 +170,8 @@ a {
 
 .hero-section .btn,
 .page-hero .btn {
-  min-width: 180px;
+  min-width: auto;
+  width: auto;
 }
 
 .hero-video,
@@ -227,6 +263,77 @@ a {
 .btn {
   border-radius: 999px;
   padding: 0.85rem 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+@media (max-width: 768px) {
+  .hero-section,
+  .page-hero {
+    padding: 1.5rem 0 !important;
+    min-height: 520px !important;
+    height: auto !important;
+    background-size: cover, cover, cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+  }
+  
+  .hero-section .container,
+  .page-hero .container {
+    min-height: 520px !important;
+    height: auto !important;
+  }
+  
+  .hero-section .row,
+  .page-hero .row {
+    min-height: 520px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .btn {
+    padding: 0.8rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .hero-section,
+  .page-hero {
+    padding: 1rem 0 !important;
+    min-height: 480px !important;
+    height: auto !important;
+    background-size: cover, cover, cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .hero-section h1,
+  .page-hero h1 {
+    font-size: 1.75rem;
+  }
+  
+  .hero-section .container,
+  .page-hero .container {
+    min-height: 480px !important;
+    height: auto !important;
+  }
+  
+  .hero-section .row,
+  .page-hero .row {
+    min-height: 480px !important;
+    height: auto !important;
+  }
+  
+  .hero-section .col-lg-7,
+  .page-hero .col-lg-7,
+  .hero-section .col-lg-5,
+  .page-hero .col-lg-5 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
 }
 
 .btn-primary,
