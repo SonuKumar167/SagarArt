@@ -3,13 +3,13 @@ require 'includes/config.php';
 $slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
 
 if ($slug === '') {
-    header('Location: index.php');
+    header('Location: /');
     exit;
 }
 
 $page = getPageContent($conn, $slug);
 if (!$page) {
-    header('Location: index.php');
+    header('Location: /');
     exit;
 }
 $services = getServices($conn);
@@ -173,7 +173,7 @@ if (empty($featuredServices)) {
               <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
             </div>
             <div class="col-lg-4 text-lg-end">
-              <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? 'services.php'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
+              <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars(normalizeRoute($section['button_link'] ?? '/services')); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
             </div>
           </div>
           <div class="row g-4">
@@ -209,7 +209,7 @@ if (empty($featuredServices)) {
                   <div class="card-body">
                     <h5 class="card-title"><?php echo htmlspecialchars($service['title']); ?></h5>
                     <p class="card-text"><?php echo htmlspecialchars($service['hero_text']); ?></p>
-                    <a href="service.php?slug=<?php echo urlencode($service['slug']); ?>" class="stretched-link text-decoration-none">Learn More</a>
+                    <a href="<?php echo htmlspecialchars(normalizeRoute('service.php?slug=' . $service['slug'])); ?>" class="stretched-link text-decoration-none">Learn More</a>
                   </div>
                 </div>
               </div>

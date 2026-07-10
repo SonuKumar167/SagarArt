@@ -11,7 +11,7 @@ $footerLinks = getFooterMenuItems($conn);
           <p class="text-white-75"><?php echo htmlspecialchars($siteSettings['footer_cta_text'] ?? 'Create more persuasive pages, polished service showcases, and faster contact flows with a website designed for conversions.'); ?></p>
         </div>
         <div class="col-lg-auto">
-          <a href="<?php echo htmlspecialchars($siteSettings['footer_cta_button_link'] ?? 'contact.php'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($siteSettings['footer_cta_button_text'] ?? 'Get in touch'); ?></a>
+          <a href="<?php echo htmlspecialchars(normalizeRoute($siteSettings['footer_cta_button_link'] ?? '/contact')); ?>" class="btn btn-primary"><?php echo htmlspecialchars($siteSettings['footer_cta_button_text'] ?? 'Get in touch'); ?></a>
         </div>
       </div>
     </div>
@@ -27,7 +27,7 @@ $footerLinks = getFooterMenuItems($conn);
         <ul class="footer-links">
           <?php if (!empty($footerLinks)): ?>
             <?php foreach ($footerLinks as $link): ?>
-              <li><a href="<?php echo htmlspecialchars($link['link']); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
+              <li><a href="<?php echo htmlspecialchars(normalizeRoute($link['link'] ?? '#')); ?>"><?php echo htmlspecialchars($link['label']); ?></a></li>
             <?php endforeach; ?>
           <?php else: ?>
             <li>No quick links have been configured yet.</li>

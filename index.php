@@ -1,6 +1,35 @@
 <?php
 require 'includes/config.php';
 
+$requestedRoute = trim((string)($_GET['route'] ?? ''), '/');
+if ($requestedRoute === '' && !empty($_SERVER['REQUEST_URI'])) {
+    $requestedRoute = trim((string)parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+}
+$requestedRoute = preg_replace('/\.php$/i', '', $requestedRoute);
+$routeParts = explode('/', $requestedRoute);
+$routeName = $routeParts[0] ?? '';
+
+if ($routeName === 'service') {
+    if (empty($_GET['slug']) && !empty($routeParts[1])) {
+        $_GET['slug'] = $routeParts[1];
+    }
+    require __DIR__ . '/service.php';
+    exit;
+}
+
+if ($routeName === 'page') {
+    if (empty($_GET['slug']) && !empty($routeParts[1])) {
+        $_GET['slug'] = $routeParts[1];
+    }
+    require __DIR__ . '/page.php';
+    exit;
+}
+
+if (in_array($routeName, ['about', 'contact', 'services'], true)) {
+    require __DIR__ . '/' . $routeName . '.php';
+    exit;
+}
+
 $siteSettings = getSiteSettings($conn);
 $page = getPageContent($conn, 'home');
 $services = getServices($conn);
@@ -56,7 +85,7 @@ if (empty($featuredServices)) {
           <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
           <?php $heroButtonText = trim($page['button_text'] ?? ''); $heroButtonLink = trim($page['button_link'] ?? ''); ?>
           <?php if ($heroButtonText !== ''): ?>
-            <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg"><?php echo htmlspecialchars($heroButtonText); ?></a>
+            <a href="<?php echo htmlspecialchars(normalizeRoute($heroButtonLink !== '' ? $heroButtonLink : '#')); ?>" class="btn btn-light btn-lg"><?php echo htmlspecialchars($heroButtonText); ?></a>
           <?php endif; ?>
         </div>
         <?php if (!empty($page['hero_video_url'])): ?>
@@ -130,7 +159,7 @@ if (empty($featuredServices)) {
           <div class="col-lg-7">
             <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
             <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
-            <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? '#'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
+            <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars(normalizeRoute($section['button_link'] ?? '#')); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
           </div>
           <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
             <div class="col-lg-5">
@@ -163,7 +192,7 @@ if (empty($featuredServices)) {
               <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
             </div>
             <div class="col-lg-4 text-lg-end">
-              <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? 'services.php'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
+              <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars(normalizeRoute($section['button_link'] ?? '/services')); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
             </div>
           </div>
           <div class="row g-4">
@@ -199,7 +228,7 @@ if (empty($featuredServices)) {
                   <div class="card-body">
                     <h5 class="card-title"><?php echo htmlspecialchars($service['title']); ?></h5>
                     <p class="card-text"><?php echo htmlspecialchars($service['hero_text']); ?></p>
-                    <a href="service.php?slug=<?php echo urlencode($service['slug']); ?>" class="stretched-link text-decoration-none">Learn More</a>
+                    <a href="<?php echo htmlspecialchars(normalizeRoute('service.php?slug=' . $service['slug'])); ?>" class="stretched-link text-decoration-none">Learn More</a>
                   </div>
                 </div>
               </div>

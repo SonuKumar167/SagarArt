@@ -1,0 +1,19 @@
+RewriteEngine On
+RewriteBase /
+
+# Let real files and folders load normally
+RewriteCond %{REQUEST_FILENAME} -d [OR]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Route slug-based pages to the main entry point with a query string
+RewriteRule ^page/([^/]+)/?$ page?slug=$1 [L,QSA,NC]
+RewriteRule ^service/([^/]+)/?$ service?slug=$1 [L,QSA,NC]
+
+# Route base pages
+RewriteRule ^about/?$ index.php?route=about [L,QSA]
+RewriteRule ^contact/?$ index.php?route=contact [L,QSA]
+RewriteRule ^services/?$ index.php?route=services [L,QSA]
+
+# Fallback for other clean URLs
+RewriteRule ^(.*)$ index.php?route=$1 [L,QSA]

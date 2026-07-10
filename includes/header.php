@@ -4,7 +4,7 @@ $headerMenuItems = getHeaderMenuItems($conn);
 ?>
 <nav class="navbar navbar-expand-lg sticky-top">
   <div class="container">
-    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.php">
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
       <?php if (!empty($siteSettings['logo_url'])): ?>
         <img src="<?php echo htmlspecialchars($siteSettings['logo_url']); ?>" alt="<?php echo htmlspecialchars($siteSettings['site_name'] ?? 'Sagar Art'); ?>" style="height: 40px; width: auto;">
       <?php endif; ?>
@@ -19,16 +19,16 @@ $headerMenuItems = getHeaderMenuItems($conn);
           <?php $children = getMenuChildren($conn, (int)$headerMenuItem['id']); ?>
           <?php if (!empty($children) && !empty($headerMenuItem['has_dropdown'])): ?>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="<?php echo htmlspecialchars($headerMenuItem['link']); ?>" role="button" data-bs-toggle="dropdown"><?php echo htmlspecialchars($headerMenuItem['label']); ?></a>
+              <a class="nav-link dropdown-toggle" href="<?php echo htmlspecialchars(normalizeRoute($headerMenuItem['link'] ?? '#')); ?>" role="button" data-bs-toggle="dropdown"><?php echo htmlspecialchars($headerMenuItem['label']); ?></a>
               <ul class="dropdown-menu">
                 <?php foreach ($children as $child): ?>
-                  <li><a class="dropdown-item" href="<?php echo htmlspecialchars($child['link']); ?>"><?php echo htmlspecialchars($child['label']); ?></a></li>
+                  <li><a class="dropdown-item" href="<?php echo htmlspecialchars(normalizeRoute($child['link'] ?? '#')); ?>"><?php echo htmlspecialchars($child['label']); ?></a></li>
                 <?php endforeach; ?>
               </ul>
             </li>
           <?php else: ?>
             <li class="nav-item">
-              <a class="nav-link" href="<?php echo htmlspecialchars($headerMenuItem['link']); ?>"><?php echo htmlspecialchars($headerMenuItem['label']); ?></a>
+              <a class="nav-link" href="<?php echo htmlspecialchars(normalizeRoute($headerMenuItem['link'] ?? '#')); ?>"><?php echo htmlspecialchars($headerMenuItem['label']); ?></a>
             </li>
           <?php endif; ?>
         <?php endforeach; ?>
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="header-banner-text text-muted"><?php echo htmlspecialchars($siteSettings['header_text']); ?></div>
       <?php endif; ?>
       <?php if (!empty($siteSettings['header_cta_text']) && !empty($siteSettings['header_cta_link'])): ?>
-        <a href="<?php echo htmlspecialchars($siteSettings['header_cta_link']); ?>" class="btn btn-sm btn-primary px-4"><?php echo htmlspecialchars($siteSettings['header_cta_text']); ?></a>
+        <a href="<?php echo htmlspecialchars(normalizeRoute($siteSettings['header_cta_link'] ?? '/contact')); ?>" class="btn btn-sm btn-primary px-4"><?php echo htmlspecialchars($siteSettings['header_cta_text']); ?></a>
       <?php endif; ?>
     </div>
   </div>

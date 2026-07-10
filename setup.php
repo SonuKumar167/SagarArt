@@ -48,5 +48,5 @@ foreach ($sql as $query) {
 }
 
 $conn->close();
-header('Location: index.php');
+header('Location: /');
 "}

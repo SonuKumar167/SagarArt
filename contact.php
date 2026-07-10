@@ -130,7 +130,7 @@ if (empty($featuredServices)) {
           <div class="col-lg-7">
             <?php if (!empty($section['title'])): ?><h3><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
             <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
-            <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? '#'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
+            <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars(normalizeRoute($section['button_link'] ?? '#')); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
           </div>
           <?php if (!empty($section['image_url']) || !empty($section['video_url'])): ?>
             <div class="col-lg-5">
@@ -163,7 +163,7 @@ if (empty($featuredServices)) {
               <?php if (!empty($section['content'])): ?><p><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
             </div>
             <div class="col-lg-4 text-lg-end">
-              <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars($section['button_link'] ?? 'services.php'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
+              <?php if (!empty($section['button_text'])): ?><a href="<?php echo htmlspecialchars(normalizeRoute($section['button_link'] ?? '/services')); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a><?php endif; ?>
             </div>
           </div>
           <div class="row g-4">

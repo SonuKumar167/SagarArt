@@ -6,7 +6,7 @@ $slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
 $services = getServices($conn);
 $service = getServiceContent($conn, $slug);
 if (!$service) {
-    header('Location: services.php');
+    header('Location: /services');
     exit;
 }
 
@@ -98,7 +98,7 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
             <div class="row g-4 mt-3">
               <?php foreach ($serviceCards as $serviceCard): ?>
                 <div class="col-md-6 col-lg-4">
-                  <a href="service.php?slug=<?php echo urlencode($serviceCard['slug']); ?>" class="text-decoration-none">
+                  <a href="<?php echo htmlspecialchars(normalizeRoute('service.php?slug=' . $serviceCard['slug'])); ?>" class="text-decoration-none">
                     <div class="card h-100 shadow-sm border-0 transition" style="cursor: pointer;">
                       <?php if (!empty($serviceCard['image_url'])): ?>
                         <img src="<?php echo htmlspecialchars($serviceCard['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($serviceCard['title']); ?>">
