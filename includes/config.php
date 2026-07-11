@@ -134,6 +134,18 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
   FOREIGN KEY (`parent_id`) REFERENCES `menu_items` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $conn->query("CREATE TABLE IF NOT EXISTS `pricing_items` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `category` VARCHAR(150) NOT NULL,
+  `item_name` VARCHAR(255) NOT NULL,
+  `slug` VARCHAR(150) NOT NULL UNIQUE,
+  `description` TEXT DEFAULT NULL,
+  `unit_label` VARCHAR(100) DEFAULT NULL,
+  `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     $conn->query("CREATE TABLE IF NOT EXISTS `admin_users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(100) NOT NULL UNIQUE,
@@ -382,6 +394,11 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
 
     function getServices($conn) {
         $result = $conn->query('SELECT id, title, slug, hero_text, image_url, button_text, button_link, display_order, is_featured FROM services ORDER BY display_order ASC, id ASC');
+        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    function getPricingItems($conn) {
+        $result = $conn->query('SELECT id, category, item_name, slug, description, unit_label, price, sort_order, is_active FROM pricing_items WHERE is_active = 1 ORDER BY category ASC, sort_order ASC, id ASC');
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 

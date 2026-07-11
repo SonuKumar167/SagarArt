@@ -29,6 +29,10 @@ if (in_array($routeName, ['review', 'reviews'], true)) {
     require __DIR__ . '/reviews.php';
     exit;
 }
+if (in_array($routeName, ['pricing'], true)) {
+    require __DIR__ . '/pricing.php';
+    exit;
+}
 
 if (in_array($routeName, ['admin/login'], true)) {
     require __DIR__ . '/admin/login.php';
@@ -83,6 +87,7 @@ if (empty($featuredServices)) {
   <?php endif; ?>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
+  <script src="https://static.elfsight.com/platform/platform.js" async></script>
 </head>
 <body>
   <?php include 'includes/header.php'; ?>
@@ -248,7 +253,11 @@ if (empty($featuredServices)) {
       </section>
     <?php endforeach; ?>
   <?php endif; ?>
-
+  <section class="py-5 bg-light text-white">
+    <div class="container">
+      <div class="elfsight-app-f0f35b72-3b20-4ce4-b864-f41012e33e5b" data-elfsight-app-lazy></div>
+    </div>
+  </section>
   <?php include 'includes/footer.php'; ?>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
