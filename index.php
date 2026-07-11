@@ -29,8 +29,8 @@ if (in_array($routeName, ['review', 'reviews'], true)) {
     require __DIR__ . '/reviews.php';
     exit;
 }
-if (in_array($routeName, ['pricing'], true)) {
-    require __DIR__ . '/pricing.php';
+if (in_array($routeName, ['calculater'], true)) {
+    require __DIR__ . '/calculater.php';
     exit;
 }
 

@@ -159,8 +159,13 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
               <div class="card admin-card">
                 <div class="card-body">
                   <?php if ($pricingItemsResult && $pricingItemsResult->num_rows > 0): ?>
+                    <div class="row mb-3">
+                      <div class="col-md-6 mb-3 mb-md-0">
+                        <input id="pricing-search" type="text" class="form-control" placeholder="Search category or item">
+                      </div>
+                    </div>
                     <div class="table-responsive">
-                      <table class="table align-middle">
+                      <table class="table align-middle" id="pricing-table">
                         <thead>
                           <tr>
                             <th>Category</th>
@@ -188,6 +193,12 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
                         </tbody>
                       </table>
                     </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                      <div id="pricing-page-info" class="text-muted"></div>
+                      <nav>
+                        <ul id="pricing-pagination" class="pagination pagination-sm mb-0"></ul>
+                      </nav>
+                    </div>
                   <?php else: ?>
                     <div class="text-muted">No pricing items found. Add a new pricing product to enable the calculator.</div>
                   <?php endif; ?>
@@ -200,6 +211,91 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
     </main>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const searchInput = document.getElementById('pricing-search');
+      const tableBody = document.querySelector('#pricing-table tbody');
+      const pagination = document.getElementById('pricing-pagination');
+      const pageInfo = document.getElementById('pricing-page-info');
+      const rowsPerPage = 10;
+      let currentPage = 1;
+      let tableRows = [];
+
+      if (!searchInput || !tableBody || !pagination || !pageInfo) return;
+
+      function buildRowData() {
+        tableRows = Array.from(tableBody.querySelectorAll('tr'));
+      }
+
+      function renderTable() {
+        const query = searchInput.value.trim().toLowerCase();
+        const filteredRows = tableRows.filter(row => {
+          const category = row.cells[0]?.textContent.trim().toLowerCase() || '';
+          const item = row.cells[1]?.textContent.trim().toLowerCase() || '';
+          return category.includes(query) || item.includes(query);
+        });
+
+        const totalRows = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+        currentPage = Math.min(currentPage, totalPages);
+
+        tableRows.forEach(row => row.style.display = 'none');
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        filteredRows.slice(start, end).forEach(row => row.style.display = '');
+
+        pageInfo.textContent = `Showing ${Math.min(totalRows, start + 1)} to ${Math.min(totalRows, end)} of ${totalRows} matching items`;
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        pagination.innerHTML = '';
+
+        if (totalPages <= 1) {
+          return;
+        }
+
+        const createButton = (label, page, disabled = false, active = false) => {
+          const li = document.createElement('li');
+          li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'page-link';
+          button.textContent = label;
+          button.disabled = disabled;
+          button.addEventListener('click', function () {
+            currentPage = page;
+            renderTable();
+          });
+          li.appendChild(button);
+          return li;
+        };
+
+        pagination.appendChild(createButton('Prev', Math.max(1, currentPage - 1), currentPage === 1));
+
+        const maxButtons = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+        let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+        if (endPage - startPage + 1 < maxButtons) {
+          startPage = Math.max(1, endPage - maxButtons + 1);
+        }
+
+        for (let page = startPage; page <= endPage; page++) {
+          pagination.appendChild(createButton(page, page, false, page === currentPage));
+        }
+
+        pagination.appendChild(createButton('Next', Math.min(totalPages, currentPage + 1), currentPage === totalPages));
+      }
+
+      searchInput.addEventListener('input', function () {
+        currentPage = 1;
+        renderTable();
+      });
+
+      buildRowData();
+      renderTable();
+    });
+  </script>
 </body>
 </html>
 <?php $conn->close(); ?>
