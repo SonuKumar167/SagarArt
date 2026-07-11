@@ -49,7 +49,13 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                   <label for="pricing-item" class="form-label">Product Item</label>
                   <select id="pricing-item" class="form-select" required>
                     <?php foreach ($initialItems as $item): ?>
-                      <option value="<?php echo htmlspecialchars($item['slug']); ?>" data-price="<?php echo htmlspecialchars($item['price']); ?>" data-unit="<?php echo htmlspecialchars($item['unit_label']); ?>"><?php echo htmlspecialchars($item['item_name']); ?></option>
+                      <option value="<?php echo htmlspecialchars($item['slug']); ?>"
+                        data-price="<?php echo htmlspecialchars($item['price']); ?>"
+                        data-threshold-quantity="<?php echo (int)$item['threshold_quantity']; ?>"
+                        data-threshold-price="<?php echo htmlspecialchars($item['threshold_price']); ?>"
+                        data-unit="<?php echo htmlspecialchars($item['unit_label']); ?>">
+                        <?php echo htmlspecialchars($item['item_name']); ?>
+                      </option>
                     <?php endforeach; ?>
                   </select>
                 </div>
@@ -100,10 +106,13 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           <div class="card section-card h-100">
             <div class="card-body">
               <h2 class="h4 mb-3">Available Price Items</h2>
+              <div class="mb-3">
+                <input id="pricing-list-search" type="text" class="form-control" placeholder="Search available items">
+              </div>
               <?php if (!empty($groupedPricingItems)): ?>
                 <div class="available-pricing-scroll">
                   <?php foreach ($groupedPricingItems as $category => $items): ?>
-                    <div class="mb-4">
+                    <div class="mb-4 category-block">
                       <h3 class="h6 mb-2 text-secondary"><?php echo htmlspecialchars($category); ?></h3>
                       <div class="table-responsive">
                         <table class="table table-borderless mb-0">
@@ -143,13 +152,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     const categorySelect = document.getElementById('pricing-category');
     const itemSelect = document.getElementById('pricing-item');
     const quantityInput = document.getElementById('pricing-quantity');
-    const unitPriceEl = document.getElementById('pricing-unit-price');
-    const unitLabelEl = document.getElementById('pricing-unit-label');
     const totalEl = document.getElementById('pricing-total');
-
-    function formatCurrency(value) {
-      return '₹ ' + Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
 
     const addItemButton = document.getElementById('add-item-button');
     const cartBody = document.getElementById('pricing-cart-body');
@@ -170,6 +173,8 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         option.value = item.slug;
         option.textContent = item.item_name;
         option.dataset.price = item.price;
+        option.dataset.thresholdQuantity = item.threshold_quantity || 0;
+        option.dataset.thresholdPrice = item.threshold_price || 0;
         option.dataset.unit = item.unit_label;
         if (index === 0) option.selected = true;
         itemSelect.appendChild(option);
@@ -189,6 +194,16 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       return '₹ ' + Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function getItemUnitPrice(item, quantity) {
+      const thresholdQuantity = Number(item.threshold_quantity || 0);
+      const thresholdPrice = Number(item.threshold_price || 0);
+      const basePrice = Number(item.price || 0);
+      if (thresholdQuantity > 0 && quantity >= thresholdQuantity && thresholdPrice > 0) {
+        return thresholdPrice;
+      }
+      return basePrice;
+    }
+
     function renderCart() {
       const items = getCartItems();
       cartBody.innerHTML = '';
@@ -199,12 +214,13 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       }
 
       items.forEach((cartItem, index) => {
+        const unitPrice = getItemUnitPrice(cartItem, cartItem.quantity);
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${cartItem.item_name}</td>
           <td><input type="number" min="1" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}"></td>
-          <td class="text-end">${formatCurrency(cartItem.price)}</td>
-          <td class="text-end">${formatCurrency(cartItem.price * cartItem.quantity)}</td>
+          <td class="text-end">${formatCurrency(unitPrice)}</td>
+          <td class="text-end">${formatCurrency(unitPrice * cartItem.quantity)}</td>
           <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-cart-item" data-index="${index}">Remove</button></td>
         `;
         cartBody.appendChild(row);
@@ -214,7 +230,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
 
     function updateTotal() {
       const items = getCartItems();
-      const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const total = items.reduce((sum, item) => sum + getItemUnitPrice(item, item.quantity) * item.quantity, 0);
       totalEl.textContent = formatCurrency(total);
     }
 
@@ -224,18 +240,21 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const quantity = Math.max(1, Number(quantityInput.value) || 1);
       const items = getCartItems();
       const existingIndex = items.findIndex(cartItem => cartItem.slug === item.slug);
+      const cartItemData = {
+        slug: item.slug,
+        category: item.category,
+        item_name: item.item_name,
+        price: Number(item.price),
+        threshold_quantity: Number(item.threshold_quantity || 0),
+        threshold_price: Number(item.threshold_price || 0),
+        unit_label: item.unit_label,
+        quantity: quantity
+      };
 
       if (existingIndex >= 0) {
         items[existingIndex].quantity += quantity;
       } else {
-        items.push({
-          slug: item.slug,
-          category: item.category,
-          item_name: item.item_name,
-          price: Number(item.price),
-          unit_label: item.unit_label,
-          quantity: quantity
-        });
+        items.push(cartItemData);
       }
 
       saveCartItems(items);
@@ -274,6 +293,25 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const index = Number(event.target.dataset.index);
       removeItemFromCart(index);
     });
+
+    const pricingListSearch = document.getElementById('pricing-list-search');
+    if (pricingListSearch) {
+      pricingListSearch.addEventListener('input', () => {
+        const query = pricingListSearch.value.trim().toLowerCase();
+        document.querySelectorAll('.available-pricing-scroll .category-block').forEach(categoryBlock => {
+          let rowMatches = false;
+          categoryBlock.querySelectorAll('tbody tr').forEach(row => {
+            const text = row.textContent.trim().toLowerCase();
+            const matches = text.includes(query);
+            row.style.display = matches ? '' : 'none';
+            if (matches) {
+              rowMatches = true;
+            }
+          });
+          categoryBlock.style.display = rowMatches ? '' : 'none';
+        });
+      });
+    }
 
     renderItems();
     renderCart();

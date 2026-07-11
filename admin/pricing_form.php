@@ -20,7 +20,7 @@ if ($deleteId > 0) {
 $pricingItem = null;
 $showForm = isset($_GET['new']) || $id > 0;
 if ($id > 0) {
-    $stmt = $conn->prepare('SELECT id, category, item_name, slug, description, unit_label, price, sort_order, is_active FROM pricing_items WHERE id = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, category, item_name, slug, description, unit_label, price, threshold_quantity, threshold_price, sort_order, is_active FROM pricing_items WHERE id = ? LIMIT 1');
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $pricingItem = $stmt->get_result()->fetch_assoc();
@@ -34,19 +34,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
     $unit_label = trim($_POST['unit_label'] ?? '');
     $price = floatval(str_replace(',', '', trim($_POST['price'] ?? '0')));
+    $threshold_quantity = (int)($_POST['threshold_quantity'] ?? 0);
+    $threshold_price = floatval(str_replace(',', '', trim($_POST['threshold_price'] ?? '0')));
     $sort_order = (int)($_POST['sort_order'] ?? 0);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $existingId = isset($_POST['existing_id']) ? (int)$_POST['existing_id'] : 0;
 
     if ($existingId > 0) {
-        $stmt = $conn->prepare('UPDATE pricing_items SET category = ?, item_name = ?, slug = ?, description = ?, unit_label = ?, price = ?, sort_order = ?, is_active = ? WHERE id = ?');
-        $stmt->bind_param('sssssdiii', $category, $item_name, $slug, $description, $unit_label, $price, $sort_order, $is_active, $existingId);
+        $stmt = $conn->prepare('UPDATE pricing_items SET category = ?, item_name = ?, slug = ?, description = ?, unit_label = ?, price = ?, threshold_quantity = ?, threshold_price = ?, sort_order = ?, is_active = ? WHERE id = ?');
+        $stmt->bind_param('ssssdidiiii', $category, $item_name, $slug, $description, $unit_label, $price, $threshold_quantity, $threshold_price, $sort_order, $is_active, $existingId);
         $stmt->execute();
         $success = 'Pricing item updated successfully.';
         $id = $existingId;
     } else {
-        $stmt = $conn->prepare('INSERT INTO pricing_items (category, item_name, slug, description, unit_label, price, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->bind_param('ssssdii', $category, $item_name, $slug, $description, $unit_label, $price, $sort_order, $is_active);
+        $stmt = $conn->prepare('INSERT INTO pricing_items (category, item_name, slug, description, unit_label, price, threshold_quantity, threshold_price, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->bind_param('ssssdidiii', $category, $item_name, $slug, $description, $unit_label, $price, $threshold_quantity, $threshold_price, $sort_order, $is_active);
         $stmt->execute();
         $success = 'Pricing item created successfully.';
         $id = $conn->insert_id;
@@ -60,12 +62,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'description' => $description,
         'unit_label' => $unit_label,
         'price' => $price,
+        'threshold_quantity' => $threshold_quantity,
+        'threshold_price' => $threshold_price,
         'sort_order' => $sort_order,
         'is_active' => $is_active,
     ];
 }
 
-$pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price, unit_label, is_active FROM pricing_items ORDER BY category ASC, sort_order ASC, id ASC');
+$pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price, threshold_quantity, threshold_price, unit_label, is_active FROM pricing_items ORDER BY category ASC, sort_order ASC, id ASC');
 
 ?>
 <!DOCTYPE html>
@@ -130,9 +134,18 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
                       </div>
                     </div>
                     <div class="row g-3">
-                      <div class="col-md-6 mb-3">
+                      <div class="col-md-4 mb-3">
                         <label class="form-label">Price</label>
                         <input type="number" step="0.01" name="price" class="form-control" value="<?php echo htmlspecialchars($pricingItem['price'] ?? '0.00'); ?>" required>
+                      </div>
+                      <div class="col-md-4 mb-3">
+                        <label class="form-label">Threshold Quantity</label>
+                        <input type="number" name="threshold_quantity" class="form-control" value="<?php echo (int)($pricingItem['threshold_quantity'] ?? 0); ?>" min="0" placeholder="e.g. 1000">
+                        <div class="form-text">Qty above which threshold pricing applies; leave 0 to disable.</div>
+                      </div>
+                      <div class="col-md-4 mb-3">
+                        <label class="form-label">Threshold Price</label>
+                        <input type="number" step="0.01" name="threshold_price" class="form-control" value="<?php echo htmlspecialchars($pricingItem['threshold_price'] ?? '0.00'); ?>" placeholder="e.g. 9.00">
                       </div>
                       <div class="col-md-6 mb-3">
                         <label class="form-label">Sort Order</label>
@@ -181,6 +194,7 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
                               <td><?php echo htmlspecialchars($row['category']); ?></td>
                               <td><?php echo htmlspecialchars($row['item_name']); ?></td>
                               <td class="text-end">₹ <?php echo number_format($row['price'], 2); ?></td>
+                              <td class="text-end"><?php echo $row['threshold_quantity'] > 0 ? 'Above '.$row['threshold_quantity'].' @ ₹'.number_format($row['threshold_price'],2) : 'Standard'; ?></td>
                               <td><?php echo !empty($row['is_active']) ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'; ?></td>
                               <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">

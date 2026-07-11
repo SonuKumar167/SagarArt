@@ -142,6 +142,8 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
   `description` TEXT DEFAULT NULL,
   `unit_label` VARCHAR(100) DEFAULT NULL,
   `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `threshold_quantity` INT NOT NULL DEFAULT 0,
+  `threshold_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `sort_order` INT NOT NULL DEFAULT 0,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -182,6 +184,8 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
     addColumnIfMissing($conn, 'services', 'is_featured', 'TINYINT(1) NOT NULL DEFAULT 0');
     addColumnIfMissing($conn, 'menu_items', 'has_dropdown', 'TINYINT(1) NOT NULL DEFAULT 0');
     addColumnIfMissing($conn, 'menu_items', 'show_in_footer', 'TINYINT(1) NOT NULL DEFAULT 0');
+    addColumnIfMissing($conn, 'pricing_items', 'threshold_quantity', 'INT NOT NULL DEFAULT 0');
+    addColumnIfMissing($conn, 'pricing_items', 'threshold_price', 'DECIMAL(10,2) NOT NULL DEFAULT 0.00');
     addColumnIfMissing($conn, 'page_sections', 'settings', 'TEXT DEFAULT NULL');
     addColumnIfMissing($conn, 'site_settings', 'header_text', 'TEXT DEFAULT NULL');
     addColumnIfMissing($conn, 'site_settings', 'header_cta_text', 'VARCHAR(255) DEFAULT NULL');
@@ -398,7 +402,7 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
     }
 
     function getPricingItems($conn) {
-        $result = $conn->query('SELECT id, category, item_name, slug, description, unit_label, price, sort_order, is_active FROM pricing_items WHERE is_active = 1 ORDER BY category ASC, sort_order ASC, id ASC');
+        $result = $conn->query('SELECT id, category, item_name, slug, description, unit_label, price, threshold_quantity, threshold_price, sort_order, is_active FROM pricing_items WHERE is_active = 1 ORDER BY category ASC, sort_order ASC, id ASC');
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
