@@ -315,10 +315,15 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         quantity: quantity
       };
 
-      // Merge only when the same slug AND same unit price (so multiple tier variants can be added separately)
-      const existingIndex = items.findIndex(cartItem => cartItem.slug === item.slug && Number(cartItem.unit_price || cartItem.price) === cartItemData.unit_price);
-      if (existingIndex >= 0) {
-        items[existingIndex].quantity = Number(items[existingIndex].quantity || 0) + Number(quantity);
+      // Keep area-based entries as separate rows so different dimensions are tracked independently.
+      const shouldMerge = !isAreaUnit(unit) && items.some(cartItem => cartItem.slug === item.slug && Number(cartItem.unit_price || cartItem.price) === cartItemData.unit_price);
+      if (shouldMerge) {
+        const existingIndex = items.findIndex(cartItem => cartItem.slug === item.slug && Number(cartItem.unit_price || cartItem.price) === cartItemData.unit_price);
+        if (existingIndex >= 0) {
+          items[existingIndex].quantity = Number(items[existingIndex].quantity || 0) + Number(quantity);
+        } else {
+          items.push(cartItemData);
+        }
       } else {
         items.push(cartItemData);
       }
