@@ -61,9 +61,11 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                 </div>
 
                 <div class="row g-3 mb-3">
-                  <div class="col-md-6">
-                    <label for="pricing-quantity" class="form-label">Quantity</label>
-                    <input id="pricing-quantity" type="number" min="1" value="1" class="form-control" required>
+                  <div class="col-md-12">
+                    <label class="form-label">Quantity / Size</label>
+                    <div id="unit-controls">
+                      <input id="pricing-quantity" type="number" min="1" value="1" class="form-control" required>
+                    </div>
                   </div>
                   <div class="col-md-6 d-flex align-items-end">
                     <button id="add-item-button" type="button" class="btn btn-primary w-100">Add Item</button>
@@ -75,7 +77,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                     <thead>
                       <tr>
                         <th>Item</th>
-                        <th>Qty</th>
+                        <th>Qty/Sqft</th>
                         <th class="text-end">Unit Price</th>
                         <th class="text-end">Subtotal</th>
                         <th></th>
@@ -157,6 +159,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     const addItemButton = document.getElementById('add-item-button');
     const cartBody = document.getElementById('pricing-cart-body');
 
+    // Clear persisted cart on page load so refresh does not preserve added items
+    localStorage.removeItem('pricingCalculatorCart');
+
     function getSelectedItem() {
       const itemSlug = itemSelect.value;
       const category = categorySelect.value;
@@ -179,6 +184,38 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         if (index === 0) option.selected = true;
         itemSelect.appendChild(option);
       });
+      updateUnitControls();
+    }
+
+    function isAreaUnit(unit) {
+      if (!unit) return false;
+      const u = unit.toString().toLowerCase();
+      return u.includes('square') || u.includes('sq') || u.includes('sqft') || u.includes('ft') || u.includes('feet');
+    }
+
+    function updateUnitControls() {
+      const selected = getSelectedItem();
+      const unit = selected ? (selected.unit_label || '') : '';
+      const container = document.getElementById('unit-controls');
+      container.innerHTML = '';
+
+      if (isAreaUnit(unit)) {
+        container.innerHTML = `
+          <div class="row g-2">
+            <div class="col-6">
+              <input id="dimension-length" type="number" min="0" step="0.01" class="form-control" placeholder="Length (ft)">
+            </div>
+            <div class="col-6">
+              <input id="dimension-breadth" type="number" min="0" step="0.01" class="form-control" placeholder="Breadth (ft)">
+            </div>
+            <div class="col-12 mt-2">
+              <div class="form-text">Computed area will be used as quantity (Length × Breadth).</div>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `<input id="pricing-quantity" type="number" min="1" value="1" class="form-control" required>`;
+      }
     }
 
     function getCartItems() {
@@ -195,13 +232,20 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     }
 
     function getItemUnitPrice(item, quantity) {
-      const thresholdQuantity = Number(item.threshold_quantity || 0);
-      const thresholdPrice = Number(item.threshold_price || 0);
       const basePrice = Number(item.price || 0);
-      if (thresholdQuantity > 0 && quantity >= thresholdQuantity && thresholdPrice > 0) {
-        return thresholdPrice;
+      let bestPrice = basePrice;
+      const thresholds = Array.isArray(item.thresholds) ? item.thresholds : [];
+      thresholds.forEach(threshold => {
+        const minQuantity = Number(threshold.min_quantity || 0);
+        const thresholdPrice = Number(threshold.price || 0);
+        if (minQuantity > 0 && quantity >= minQuantity && thresholdPrice > 0) {
+          bestPrice = thresholdPrice;
+        }
+      });
+      if (bestPrice === basePrice && item.threshold_quantity > 0 && item.threshold_price > 0 && quantity >= item.threshold_quantity) {
+        bestPrice = Number(item.threshold_price);
       }
-      return basePrice;
+      return bestPrice;
     }
 
     function renderCart() {
@@ -214,13 +258,13 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       }
 
       items.forEach((cartItem, index) => {
-        const unitPrice = getItemUnitPrice(cartItem, cartItem.quantity);
+        const liveUnitPrice = getItemUnitPrice(cartItem, cartItem.quantity);
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${cartItem.item_name}</td>
-          <td><input type="number" min="1" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}"></td>
-          <td class="text-end">${formatCurrency(unitPrice)}</td>
-          <td class="text-end">${formatCurrency(unitPrice * cartItem.quantity)}</td>
+          <td><input type="number" min="0.01" step="any" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}"></td>
+          <td class="text-end">${formatCurrency(liveUnitPrice)}</td>
+          <td class="text-end">${formatCurrency(liveUnitPrice * cartItem.quantity)}</td>
           <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-cart-item" data-index="${index}">Remove</button></td>
         `;
         cartBody.appendChild(row);
@@ -230,29 +274,51 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
 
     function updateTotal() {
       const items = getCartItems();
-      const total = items.reduce((sum, item) => sum + getItemUnitPrice(item, item.quantity) * item.quantity, 0);
+      const total = items.reduce((sum, item) => {
+        const unit = getItemUnitPrice(item, item.quantity);
+        return sum + unit * item.quantity;
+      }, 0);
       totalEl.textContent = formatCurrency(total);
     }
 
     function addItemToCart() {
       const item = getSelectedItem();
       if (!item) return;
-      const quantity = Math.max(1, Number(quantityInput.value) || 1);
+      let quantity = 1;
+      const unit = item.unit_label || '';
+      if (isAreaUnit(unit)) {
+        const lengthEl = document.getElementById('dimension-length');
+        const breadthEl = document.getElementById('dimension-breadth');
+        const length = Math.max(0, Number(lengthEl ? lengthEl.value : 0) || 0);
+        const breadth = Math.max(0, Number(breadthEl ? breadthEl.value : 0) || 0);
+        quantity = parseFloat((length * breadth).toFixed(4)) || 0;
+        if (quantity <= 0) {
+          alert('Please enter valid length and breadth to compute area.');
+          return;
+        }
+      } else {
+        const qEl = document.getElementById('pricing-quantity');
+        quantity = Math.max(1, Number(qEl ? qEl.value : 1) || 1);
+      }
       const items = getCartItems();
-      const existingIndex = items.findIndex(cartItem => cartItem.slug === item.slug);
+      const currentUnitPrice = getItemUnitPrice(item, quantity);
       const cartItemData = {
         slug: item.slug,
         category: item.category,
         item_name: item.item_name,
         price: Number(item.price),
+        unit_price: Number(currentUnitPrice),
+        thresholds: Array.isArray(item.thresholds) ? item.thresholds : [],
         threshold_quantity: Number(item.threshold_quantity || 0),
         threshold_price: Number(item.threshold_price || 0),
         unit_label: item.unit_label,
         quantity: quantity
       };
 
+      // Merge only when the same slug AND same unit price (so multiple tier variants can be added separately)
+      const existingIndex = items.findIndex(cartItem => cartItem.slug === item.slug && Number(cartItem.unit_price || cartItem.price) === cartItemData.unit_price);
       if (existingIndex >= 0) {
-        items[existingIndex].quantity += quantity;
+        items[existingIndex].quantity = Number(items[existingIndex].quantity || 0) + Number(quantity);
       } else {
         items.push(cartItemData);
       }
@@ -272,6 +338,10 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       renderItems();
     });
 
+    itemSelect.addEventListener('change', () => {
+      updateUnitControls();
+    });
+
     addItemButton.addEventListener('click', () => {
       addItemToCart();
     });
@@ -279,10 +349,11 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     cartBody.addEventListener('change', (event) => {
       if (!event.target.classList.contains('cart-quantity')) return;
       const index = Number(event.target.dataset.index);
-      const quantity = Math.max(1, Number(event.target.value) || 1);
+      const quantity = Math.max(0.01, Number(event.target.value) || 0.01);
       const items = getCartItems();
       if (items[index]) {
         items[index].quantity = quantity;
+        items[index].unit_price = getItemUnitPrice(items[index], quantity);
         saveCartItems(items);
         renderCart();
       }

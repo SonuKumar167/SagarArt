@@ -148,6 +148,16 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
   `is_active` TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $conn->query("CREATE TABLE IF NOT EXISTS `pricing_item_thresholds` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `pricing_item_id` INT NOT NULL,
+  `min_quantity` INT NOT NULL DEFAULT 1,
+  `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  UNIQUE KEY `pricing_item_thresholds_unique` (`pricing_item_id`, `min_quantity`),
+  CONSTRAINT `fk_pricing_item_thresholds_item` FOREIGN KEY (`pricing_item_id`) REFERENCES `pricing_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     $conn->query("CREATE TABLE IF NOT EXISTS `admin_users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(100) NOT NULL UNIQUE,
@@ -403,7 +413,30 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
 
     function getPricingItems($conn) {
         $result = $conn->query('SELECT id, category, item_name, slug, description, unit_label, price, threshold_quantity, threshold_price, sort_order, is_active FROM pricing_items WHERE is_active = 1 ORDER BY category ASC, sort_order ASC, id ASC');
-        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $items = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+        $thresholds = [];
+        $thresholdResult = $conn->query('SELECT pricing_item_id, min_quantity, price FROM pricing_item_thresholds ORDER BY pricing_item_id ASC, min_quantity ASC');
+        if ($thresholdResult) {
+            while ($row = $thresholdResult->fetch_assoc()) {
+                $thresholds[$row['pricing_item_id']][] = [
+                    'min_quantity' => (float)$row['min_quantity'],
+                    'price' => (float)$row['price'],
+                ];
+            }
+        }
+
+        foreach ($items as &$item) {
+            $item['thresholds'] = $thresholds[$item['id']] ?? [];
+            if (empty($item['thresholds']) && $item['threshold_quantity'] > 0 && $item['threshold_price'] > 0) {
+                $item['thresholds'] = [[
+                    'min_quantity' => (int)$item['threshold_quantity'],
+                    'price' => (float)$item['threshold_price'],
+                ]];
+            }
+        }
+
+        return $items;
     }
 
     function getServiceContent($conn, $slug) {

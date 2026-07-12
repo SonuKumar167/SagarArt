@@ -19,11 +19,22 @@ if ($deleteId > 0) {
 
 $pricingItem = null;
 $showForm = isset($_GET['new']) || $id > 0;
+$pricingItemThresholds = [];
 if ($id > 0) {
     $stmt = $conn->prepare('SELECT id, category, item_name, slug, description, unit_label, price, threshold_quantity, threshold_price, sort_order, is_active FROM pricing_items WHERE id = ? LIMIT 1');
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $pricingItem = $stmt->get_result()->fetch_assoc();
+
+    if ($pricingItem) {
+        $thresholdStmt = $conn->prepare('SELECT id, min_quantity, price FROM pricing_item_thresholds WHERE pricing_item_id = ? ORDER BY min_quantity ASC');
+        $thresholdStmt->bind_param('i', $id);
+        $thresholdStmt->execute();
+        $thresholdResult = $thresholdStmt->get_result();
+        while ($thresholdRow = $thresholdResult->fetch_assoc()) {
+            $pricingItemThresholds[] = $thresholdRow;
+        }
+    }
 }
 $pricingItem = $pricingItem ?: [];
 
@@ -34,24 +45,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
     $unit_label = trim($_POST['unit_label'] ?? '');
     $price = floatval(str_replace(',', '', trim($_POST['price'] ?? '0')));
-    $threshold_quantity = (int)($_POST['threshold_quantity'] ?? 0);
-    $threshold_price = floatval(str_replace(',', '', trim($_POST['threshold_price'] ?? '0')));
     $sort_order = (int)($_POST['sort_order'] ?? 0);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $existingId = isset($_POST['existing_id']) ? (int)$_POST['existing_id'] : 0;
 
+    $thresholdMinQuantities = $_POST['threshold_min_quantity'] ?? [];
+    $thresholdPrices = $_POST['threshold_price'] ?? [];
+    $thresholds = [];
+    foreach ($thresholdMinQuantities as $index => $minQuantity) {
+      $minQuantity = floatval(str_replace(',', '', trim($minQuantity ?? '0')));
+      $tierPrice = floatval(str_replace(',', '', trim($thresholdPrices[$index] ?? '0')));
+      if ($minQuantity > 0 && $tierPrice > 0) {
+        $thresholds[] = [
+          'min_quantity' => $minQuantity,
+          'price' => $tierPrice,
+        ];
+      }
+    }
+
+    $legacyThresholdQuantity = 0;
+    $legacyThresholdPrice = 0.00;
+    if (!empty($thresholds)) {
+        usort($thresholds, function ($a, $b) {
+            return $a['min_quantity'] <=> $b['min_quantity'];
+        });
+        $legacyThresholdQuantity = $thresholds[0]['min_quantity'];
+        $legacyThresholdPrice = $thresholds[0]['price'];
+    }
+
     if ($existingId > 0) {
         $stmt = $conn->prepare('UPDATE pricing_items SET category = ?, item_name = ?, slug = ?, description = ?, unit_label = ?, price = ?, threshold_quantity = ?, threshold_price = ?, sort_order = ?, is_active = ? WHERE id = ?');
-        $stmt->bind_param('ssssdidiiii', $category, $item_name, $slug, $description, $unit_label, $price, $threshold_quantity, $threshold_price, $sort_order, $is_active, $existingId);
+        $stmt->bind_param('sssssdidiii', $category, $item_name, $slug, $description, $unit_label, $price, $legacyThresholdQuantity, $legacyThresholdPrice, $sort_order, $is_active, $existingId);
         $stmt->execute();
+
+        $deleteStmt = $conn->prepare('DELETE FROM pricing_item_thresholds WHERE pricing_item_id = ?');
+        $deleteStmt->bind_param('i', $existingId);
+        $deleteStmt->execute();
+
+        if (!empty($thresholds)) {
+            $insertThreshold = $conn->prepare('INSERT INTO pricing_item_thresholds (pricing_item_id, min_quantity, price, sort_order) VALUES (?, ?, ?, ?)');
+            foreach ($thresholds as $index => $threshold) {
+                $sortOrder = $index + 1;
+                $insertThreshold->bind_param('iddi', $existingId, $threshold['min_quantity'], $threshold['price'], $sortOrder);
+                $insertThreshold->execute();
+            }
+        }
+
         $success = 'Pricing item updated successfully.';
         $id = $existingId;
     } else {
         $stmt = $conn->prepare('INSERT INTO pricing_items (category, item_name, slug, description, unit_label, price, threshold_quantity, threshold_price, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->bind_param('ssssdidiii', $category, $item_name, $slug, $description, $unit_label, $price, $threshold_quantity, $threshold_price, $sort_order, $is_active);
+        $stmt->bind_param('sssssdidii', $category, $item_name, $slug, $description, $unit_label, $price, $legacyThresholdQuantity, $legacyThresholdPrice, $sort_order, $is_active);
         $stmt->execute();
-        $success = 'Pricing item created successfully.';
         $id = $conn->insert_id;
+
+        if (!empty($thresholds)) {
+            $insertThreshold = $conn->prepare('INSERT INTO pricing_item_thresholds (pricing_item_id, min_quantity, price, sort_order) VALUES (?, ?, ?, ?)');
+            foreach ($thresholds as $index => $threshold) {
+                $sortOrder = $index + 1;
+                $insertThreshold->bind_param('iddi', $id, $threshold['min_quantity'], $threshold['price'], $sortOrder);
+                $insertThreshold->execute();
+            }
+        }
+
+        $success = 'Pricing item created successfully.';
     }
 
     $pricingItem = [
@@ -62,11 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'description' => $description,
         'unit_label' => $unit_label,
         'price' => $price,
-        'threshold_quantity' => $threshold_quantity,
-        'threshold_price' => $threshold_price,
+        'threshold_quantity' => $legacyThresholdQuantity,
+        'threshold_price' => $legacyThresholdPrice,
         'sort_order' => $sort_order,
         'is_active' => $is_active,
     ];
+    $pricingItemThresholds = $thresholds;
 }
 
 $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price, threshold_quantity, threshold_price, unit_label, is_active FROM pricing_items ORDER BY category ASC, sort_order ASC, id ASC');
@@ -138,14 +196,43 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
                         <label class="form-label">Price</label>
                         <input type="number" step="0.01" name="price" class="form-control" value="<?php echo htmlspecialchars($pricingItem['price'] ?? '0.00'); ?>" required>
                       </div>
-                      <div class="col-md-4 mb-3">
-                        <label class="form-label">Threshold Quantity</label>
-                        <input type="number" name="threshold_quantity" class="form-control" value="<?php echo (int)($pricingItem['threshold_quantity'] ?? 0); ?>" min="0" placeholder="e.g. 1000">
-                        <div class="form-text">Qty above which threshold pricing applies; leave 0 to disable.</div>
-                      </div>
-                      <div class="col-md-4 mb-3">
-                        <label class="form-label">Threshold Price</label>
-                        <input type="number" step="0.01" name="threshold_price" class="form-control" value="<?php echo htmlspecialchars($pricingItem['threshold_price'] ?? '0.00'); ?>" placeholder="e.g. 9.00">
+                      <div class="col-md-8 mb-3">
+                        <label class="form-label">Quantity Pricing Tiers</label>
+                        <div id="thresholds-container">
+                          <?php if (!empty($pricingItemThresholds)): ?>
+                            <?php foreach ($pricingItemThresholds as $tier): ?>
+                              <div class="row g-2 mb-2 threshold-row align-items-end">
+                                <div class="col-5">
+                                  <label class="form-label visually-hidden">Min Quantity</label>
+                                  <input type="number" step="any" name="threshold_min_quantity[]" class="form-control" value="<?php echo htmlspecialchars($tier['min_quantity']); ?>" min="0.01" placeholder="Min qty">
+                                </div>
+                                <div class="col-5">
+                                  <label class="form-label visually-hidden">Tier Price</label>
+                                  <input type="number" step="0.01" name="threshold_price[]" class="form-control" value="<?php echo htmlspecialchars($tier['price']); ?>" min="0" placeholder="Tier price">
+                                </div>
+                                <div class="col-auto">
+                                  <button type="button" class="btn btn-outline-danger btn-sm remove-threshold-row">Remove</button>
+                                </div>
+                              </div>
+                            <?php endforeach; ?>
+                          <?php else: ?>
+                            <div class="row g-2 mb-2 threshold-row align-items-end">
+                              <div class="col-5">
+                                <label class="form-label visually-hidden">Min Quantity</label>
+                                <input type="number" step="any" name="threshold_min_quantity[]" class="form-control" min="0.01" placeholder="Min qty">
+                              </div>
+                              <div class="col-5">
+                                <label class="form-label visually-hidden">Tier Price</label>
+                                <input type="number" step="0.01" name="threshold_price[]" class="form-control" min="0" placeholder="Tier price">
+                              </div>
+                              <div class="col-auto">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-threshold-row">Remove</button>
+                              </div>
+                            </div>
+                          <?php endif; ?>
+                        </div>
+                        <button type="button" id="add-threshold-row" class="btn btn-sm btn-outline-primary">Add Tier</button>
+                        <div class="form-text">Use multiple rows for tiered bulk pricing. Leave blank rows empty.</div>
                       </div>
                       <div class="col-md-6 mb-3">
                         <label class="form-label">Sort Order</label>
@@ -235,79 +322,115 @@ $pricingItemsResult = $conn->query('SELECT id, category, item_name, slug, price,
       let currentPage = 1;
       let tableRows = [];
 
-      if (!searchInput || !tableBody || !pagination || !pageInfo) return;
+      if (searchInput && tableBody && pagination && pageInfo) {
+        function buildRowData() {
+          tableRows = Array.from(tableBody.querySelectorAll('tr'));
+        }
 
-      function buildRowData() {
-        tableRows = Array.from(tableBody.querySelectorAll('tr'));
-      }
+        function renderTable() {
+          const query = searchInput.value.trim().toLowerCase();
+          const filteredRows = tableRows.filter(row => {
+            const category = row.cells[0]?.textContent.trim().toLowerCase() || '';
+            const item = row.cells[1]?.textContent.trim().toLowerCase() || '';
+            return category.includes(query) || item.includes(query);
+          });
 
-      function renderTable() {
-        const query = searchInput.value.trim().toLowerCase();
-        const filteredRows = tableRows.filter(row => {
-          const category = row.cells[0]?.textContent.trim().toLowerCase() || '';
-          const item = row.cells[1]?.textContent.trim().toLowerCase() || '';
-          return category.includes(query) || item.includes(query);
+          const totalRows = filteredRows.length;
+          const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+          currentPage = Math.min(currentPage, totalPages);
+
+          tableRows.forEach(row => row.style.display = 'none');
+          const start = (currentPage - 1) * rowsPerPage;
+          const end = start + rowsPerPage;
+          filteredRows.slice(start, end).forEach(row => row.style.display = '');
+
+          pageInfo.textContent = `Showing ${Math.min(totalRows, start + 1)} to ${Math.min(totalRows, end)} of ${totalRows} matching items`;
+          renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+          pagination.innerHTML = '';
+
+          if (totalPages <= 1) {
+            return;
+          }
+
+          const createButton = (label, page, disabled = false, active = false) => {
+            const li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'page-link';
+            button.textContent = label;
+            button.disabled = disabled;
+            button.addEventListener('click', function () {
+              currentPage = page;
+              renderTable();
+            });
+            li.appendChild(button);
+            return li;
+          };
+
+          pagination.appendChild(createButton('Prev', Math.max(1, currentPage - 1), currentPage === 1));
+
+          const maxButtons = 5;
+          let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+          let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+          if (endPage - startPage + 1 < maxButtons) {
+            startPage = Math.max(1, endPage - maxButtons + 1);
+          }
+
+          for (let page = startPage; page <= endPage; page++) {
+            pagination.appendChild(createButton(page, page, false, page === currentPage));
+          }
+
+          pagination.appendChild(createButton('Next', Math.min(totalPages, currentPage + 1), currentPage === totalPages));
+        }
+
+        searchInput.addEventListener('input', function () {
+          currentPage = 1;
+          renderTable();
         });
 
-        const totalRows = filteredRows.length;
-        const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
-        currentPage = Math.min(currentPage, totalPages);
-
-        tableRows.forEach(row => row.style.display = 'none');
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        filteredRows.slice(start, end).forEach(row => row.style.display = '');
-
-        pageInfo.textContent = `Showing ${Math.min(totalRows, start + 1)} to ${Math.min(totalRows, end)} of ${totalRows} matching items`;
-        renderPagination(totalPages);
-      }
-
-      function renderPagination(totalPages) {
-        pagination.innerHTML = '';
-
-        if (totalPages <= 1) {
-          return;
-        }
-
-        const createButton = (label, page, disabled = false, active = false) => {
-          const li = document.createElement('li');
-          li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'page-link';
-          button.textContent = label;
-          button.disabled = disabled;
-          button.addEventListener('click', function () {
-            currentPage = page;
-            renderTable();
-          });
-          li.appendChild(button);
-          return li;
-        };
-
-        pagination.appendChild(createButton('Prev', Math.max(1, currentPage - 1), currentPage === 1));
-
-        const maxButtons = 5;
-        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-        let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-        if (endPage - startPage + 1 < maxButtons) {
-          startPage = Math.max(1, endPage - maxButtons + 1);
-        }
-
-        for (let page = startPage; page <= endPage; page++) {
-          pagination.appendChild(createButton(page, page, false, page === currentPage));
-        }
-
-        pagination.appendChild(createButton('Next', Math.min(totalPages, currentPage + 1), currentPage === totalPages));
-      }
-
-      searchInput.addEventListener('input', function () {
-        currentPage = 1;
+        buildRowData();
         renderTable();
-      });
+      }
 
-      buildRowData();
-      renderTable();
+      function createThresholdRow(minQuantity = '', price = '') {
+        const row = document.createElement('div');
+        row.className = 'row g-2 mb-2 threshold-row align-items-end';
+        row.innerHTML = `
+          <div class="col-5">
+            <label class="form-label visually-hidden">Min Quantity</label>
+            <input type="number" step="any" name="threshold_min_quantity[]" class="form-control" min="0.01" placeholder="Min qty" value="${minQuantity}">
+          </div>
+          <div class="col-5">
+            <label class="form-label visually-hidden">Tier Price</label>
+            <input type="number" step="0.01" name="threshold_price[]" class="form-control" min="0" placeholder="Tier price" value="${price}">
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-threshold-row">Remove</button>
+          </div>
+        `;
+        return row;
+      }
+
+      const thresholdsContainer = document.getElementById('thresholds-container');
+      const addThresholdRowButton = document.getElementById('add-threshold-row');
+
+      if (thresholdsContainer && addThresholdRowButton) {
+        addThresholdRowButton.addEventListener('click', function () {
+          thresholdsContainer.appendChild(createThresholdRow());
+        });
+
+        thresholdsContainer.addEventListener('click', function (event) {
+          if (!event.target.classList.contains('remove-threshold-row')) return;
+          const row = event.target.closest('.threshold-row');
+          if (row) {
+            thresholdsContainer.removeChild(row);
+          }
+        });
+      }
     });
   </script>
 </body>
