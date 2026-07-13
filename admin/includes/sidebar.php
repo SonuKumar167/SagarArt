@@ -5,6 +5,7 @@ $navItems = [
     ['label' => 'Pages', 'url' => 'page_form.php'],
     ['label' => 'Services', 'url' => 'services.php'],
     ['label' => 'Pricing', 'url' => 'pricing_form.php'],
+    ['label' => 'Product Catalog', 'url' => 'pricing_catalog.php'],
     ['label' => 'Menus', 'url' => 'menu_form.php'],
     ['label' => 'Analytics', 'url' => 'analytics.php'],
     ['label' => 'Header & Footer', 'url' => 'settings_form.php'],

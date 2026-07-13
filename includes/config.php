@@ -136,6 +136,7 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
 
     $conn->query("CREATE TABLE IF NOT EXISTS `pricing_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `catalog_item_id` INT DEFAULT NULL,
   `category` VARCHAR(150) NOT NULL,
   `item_name` VARCHAR(255) NOT NULL,
   `slug` VARCHAR(150) NOT NULL UNIQUE,
@@ -151,11 +152,31 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
     $conn->query("CREATE TABLE IF NOT EXISTS `pricing_item_thresholds` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `pricing_item_id` INT NOT NULL,
-  `min_quantity` INT NOT NULL DEFAULT 1,
+  `min_quantity` DECIMAL(10,4) NOT NULL DEFAULT 0.0000,
   `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `sort_order` INT NOT NULL DEFAULT 0,
   UNIQUE KEY `pricing_item_thresholds_unique` (`pricing_item_id`, `min_quantity`),
   CONSTRAINT `fk_pricing_item_thresholds_item` FOREIGN KEY (`pricing_item_id`) REFERENCES `pricing_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `pricing_categories` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(150) NOT NULL,
+  `slug` VARCHAR(150) NOT NULL UNIQUE,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `pricing_catalog_items` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `category_id` INT NOT NULL,
+  `item_name` VARCHAR(255) NOT NULL,
+  `slug` VARCHAR(150) NOT NULL UNIQUE,
+  `description` TEXT DEFAULT NULL,
+  `unit_label` VARCHAR(100) DEFAULT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  CONSTRAINT `fk_pricing_catalog_items_category` FOREIGN KEY (`category_id`) REFERENCES `pricing_categories` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $conn->query("CREATE TABLE IF NOT EXISTS `admin_users` (
@@ -196,6 +217,7 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
     addColumnIfMissing($conn, 'menu_items', 'show_in_footer', 'TINYINT(1) NOT NULL DEFAULT 0');
     addColumnIfMissing($conn, 'pricing_items', 'threshold_quantity', 'INT NOT NULL DEFAULT 0');
     addColumnIfMissing($conn, 'pricing_items', 'threshold_price', 'DECIMAL(10,2) NOT NULL DEFAULT 0.00');
+    addColumnIfMissing($conn, 'pricing_items', 'catalog_item_id', 'INT DEFAULT NULL');
     addColumnIfMissing($conn, 'page_sections', 'settings', 'TEXT DEFAULT NULL');
     addColumnIfMissing($conn, 'site_settings', 'header_text', 'TEXT DEFAULT NULL');
     addColumnIfMissing($conn, 'site_settings', 'header_cta_text', 'VARCHAR(255) DEFAULT NULL');
