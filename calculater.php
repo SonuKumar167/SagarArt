@@ -55,7 +55,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
   <section class="section-shell">
     <div class="container">
       <div class="row align-items-center gy-4">
-        <div class="col-lg-6">
+        <div class="col-lg-8">
           <h1 class="display-5 fw-bold">Pricing Calculator</h1>
           <p class="lead text-muted">Select a product, choose quantity, and get a fast estimate for your print or signage order.</p>
           <div class="card section-card mt-4">
@@ -103,22 +103,34 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                   <table class="table table-hover align-middle">
                     <thead>
                       <tr>
-                        <th>Item</th>
-                        <th>Qty/Sqft</th>
-                        <th class="text-end">Unit Price</th>
-                        <th class="text-end">Subtotal</th>
+                        <th>SR NO</th>
+                        <th>Item Name</th>
+                        <th>SIZE / DIMENSION</th>
+                        <th>UNIT</th>
+                        <th>MATERIAL / PAPER</th>
+                        <th>QTY</th>
+                        <th class="text-end">RATE (₹)</th>
+                        <th class="text-end">AMOUNT (₹)</th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody id="pricing-cart-body">
                       <tr class="text-center text-muted">
-                        <td colspan="5">No items added yet.</td>
+                        <td colspan="9">No items added yet.</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted">Sub Total</span>
+                    <strong id="pricing-subtotal">₹ 0.00</strong>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted">GST (18%)</span>
+                    <strong id="pricing-gst-amount">₹ 0.00</strong>
+                  </div>
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="text-muted">Grand Total</span>
                     <strong id="pricing-total">₹ 0.00</strong>
@@ -135,10 +147,10 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-lg-4">
           <div class="card section-card h-100">
             <div class="card-body">
-              <h2 class="h4 mb-3">Available Price Items</h2>
+              <h2 class="h4 mb-3">Available Items</h2>
               <div class="mb-3">
                 <input id="pricing-list-search" type="text" class="form-control" placeholder="Search available items">
               </div>
@@ -187,18 +199,39 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     const quantityControls = document.getElementById('quantity-controls');
     const suggestionContainer = document.getElementById('dimension-suggestions');
     const totalEl = document.getElementById('pricing-total');
+    const subtotalEl = document.getElementById('pricing-subtotal');
+    const gstAmountEl = document.getElementById('pricing-gst-amount');
+    const GST_PERCENT = 18; // fixed GST percent (display-only)
 
     const addItemButton = document.getElementById('add-item-button');
     const cartBody = document.getElementById('pricing-cart-body');
 
-    // Clear persisted cart on page load so refresh does not preserve added items
-    localStorage.removeItem('pricingCalculatorCart');
+    // GST is fixed/display-only; totals update automatically via updateTotal()
+
+    function getStorageCartKey() {
+      return 'pricingCalculatorCart';
+    }
 
     function getSelectedItems() {
       const selectedCategory = categorySelect.value;
       const items = pricingGroups[selectedCategory] || [];
-      const selectedSlugs = Array.from(itemSelect.selectedOptions).map(option => option.value);
-      return items.filter(item => selectedSlugs.includes(item.slug));
+      const selectedOptions = Array.from(itemSelect.selectedOptions || []);
+
+      if (!selectedOptions.length && items.length) {
+        const fallbackOption = itemSelect.options[0];
+        if (fallbackOption) {
+          fallbackOption.selected = true;
+          selectedOptions.push(fallbackOption);
+        }
+      }
+
+      const selectedValues = selectedOptions.map(option => option.value).filter(Boolean);
+      const normalizedValues = new Set(selectedValues);
+
+      return items.filter(item => {
+        const itemKey = item.slug || item.id || '';
+        return normalizedValues.has(itemKey);
+      });
     }
 
     function getSelectedItem() {
@@ -228,7 +261,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     function isAreaUnit(unit) {
       if (!unit) return false;
       const u = unit.toString().toLowerCase().replace(/\s+/g, ' ').trim();
-      return u === 'sq ft' || u === 'sqft' || u === 'square feet' || u === 'square foot' || u === 'square ft';
+      return u === 'sq ft' || u === 'sqft' || u === 'per sqft' || u === 'square feet' || u === 'square foot' || u === 'square ft';
     }
 
     function getSelectedUnitLabel() {
@@ -249,7 +282,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       if (!length || !breadth) return 0;
       const lengthFt = mode === 'in' ? length / 12 : length;
       const breadthFt = mode === 'in' ? breadth / 12 : breadth;
-      return parseFloat((lengthFt * breadthFt).toFixed(4));
+      return parseFloat((lengthFt * breadthFt).toFixed(2));
     }
 
     function formatDimension(value, mode) {
@@ -259,10 +292,18 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       return `${value.toFixed(2)} ft`;
     }
 
-    function buildSuggestionRows(item, quantities, mode) {
+    function getSuggestionLabel(item, quantity) {
+      if (isAreaUnit(item?.unit_label)) {
+        return `${quantity.toFixed(2)} sq ft`;
+      }
+      const label = item?.unit_label ? item.unit_label.toString().trim() : '';
+      return label ? `${quantity.toFixed(2)} ${label}` : `${quantity.toFixed(2)} unit`;
+    }
+
+    function buildSuggestionRows(item, quantities) {
       const uniqueQuantities = Array.from(new Set(quantities.filter(q => q > 0))).sort((a, b) => a - b).slice(0, 4);
       if (!uniqueQuantities.length) {
-        return '<div class="text-muted">Enter dimensions to see pricing suggestions.</div>';
+        return '<div class="text-muted">Enter a quantity to see pricing suggestions.</div>';
       }
 
       const rows = uniqueQuantities.map(quantity => {
@@ -271,7 +312,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         return `
           <div class="list-group-item d-flex justify-content-between align-items-center">
             <div>
-              <div class="fw-semibold">${quantity.toFixed(2)} sq ft</div>
+              <div class="fw-semibold">${getSuggestionLabel(item, quantity)}</div>
               <div class="text-muted small">Unit price: ${formatCurrency(unitPrice)}</div>
             </div>
             <div class="text-end">
@@ -293,24 +334,40 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
 
     function renderDimensionSuggestions() {
       const selectedItems = getSelectedItems();
-      if (selectedItems.length !== 1 || !isAreaUnit(selectedItems[0].unit_label)) {
+      if (selectedItems.length !== 1) {
         suggestionContainer.innerHTML = '';
         return;
       }
+
       const item = selectedItems[0];
-      const mode = getSelectedUnitMode();
-      const lengthEl = document.getElementById('dimension-length');
-      const breadthEl = document.getElementById('dimension-breadth');
-      const length = lengthEl ? Number(lengthEl.value || 0) : 0;
-      const breadth = breadthEl ? Number(breadthEl.value || 0) : 0;
-      if (length <= 0 || breadth <= 0) {
-        suggestionContainer.innerHTML = '<div class="text-muted">Enter valid length and breadth to see pricing suggestions.</div>';
+      const qtyEl = document.getElementById('pricing-quantity');
+      const currentQuantity = qtyEl ? Number(qtyEl.value || 0) : 0;
+
+      if (isAreaUnit(item.unit_label)) {
+        const mode = getSelectedUnitMode();
+        const lengthEl = document.getElementById('dimension-length');
+        const breadthEl = document.getElementById('dimension-breadth');
+        const length = lengthEl ? Number(lengthEl.value || 0) : 0;
+        const breadth = breadthEl ? Number(breadthEl.value || 0) : 0;
+        if (length <= 0 || breadth <= 0) {
+          suggestionContainer.innerHTML = '<div class="text-muted">Enter valid length and breadth to see pricing suggestions.</div>';
+          return;
+        }
+        const area = toSquareFeet(length, breadth, mode);
+        const thresholdSizes = Array.isArray(item.thresholds) ? item.thresholds.map(t => Number(t.min_quantity || 0)).filter(q => q > 0) : [];
+        const sampleAreas = [area, ...thresholdSizes.slice(0, 3)];
+        suggestionContainer.innerHTML = buildSuggestionRows(item, sampleAreas);
         return;
       }
-      const area = toSquareFeet(length, breadth, mode);
+
+      if (currentQuantity <= 0) {
+        suggestionContainer.innerHTML = '<div class="text-muted">Enter a quantity to see pricing suggestions.</div>';
+        return;
+      }
+
       const thresholdSizes = Array.isArray(item.thresholds) ? item.thresholds.map(t => Number(t.min_quantity || 0)).filter(q => q > 0) : [];
-      const sampleAreas = [area, ...thresholdSizes.slice(0, 3)];
-      suggestionContainer.innerHTML = buildSuggestionRows(item, sampleAreas, mode);
+      const sampleQuantities = [currentQuantity, ...thresholdSizes.slice(0, 3)];
+      suggestionContainer.innerHTML = buildSuggestionRows(item, sampleQuantities);
     }
 
     function updateUnitControls() {
@@ -352,23 +409,37 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           el.addEventListener('input', renderDimensionSuggestions);
           el.addEventListener('change', renderDimensionSuggestions);
         });
-        renderDimensionSuggestions();
       } else {
         quantityControls.innerHTML = `<input id="pricing-quantity" type="number" min="1" value="1" class="form-control" placeholder="Quantity ${unitLabel ? `(${unitLabel})` : ''}" required>`;
         if (selectedItems.length > 1 && selectedItems.some(item => isAreaUnit(item.unit_label))) {
           quantityControls.insertAdjacentHTML('beforeend', '<div class="form-text text-warning">Multiple selection includes area-based items; use a shared quantity value only.</div>');
         }
-        suggestionContainer.innerHTML = '';
       }
+
+      const qtyEl = document.getElementById('pricing-quantity');
+      if (qtyEl) {
+        qtyEl.addEventListener('input', renderDimensionSuggestions);
+        qtyEl.addEventListener('change', renderDimensionSuggestions);
+      }
+      renderDimensionSuggestions();
     }
 
     function getCartItems() {
-      const cartData = localStorage.getItem('pricingCalculatorCart');
-      return cartData ? JSON.parse(cartData) : [];
+      try {
+        const cartData = localStorage.getItem(getStorageCartKey());
+        return cartData ? JSON.parse(cartData) : [];
+      } catch (error) {
+        console.error('Unable to read cart from localStorage:', error);
+        return [];
+      }
     }
 
     function saveCartItems(items) {
-      localStorage.setItem('pricingCalculatorCart', JSON.stringify(items));
+      try {
+        localStorage.setItem(getStorageCartKey(), JSON.stringify(items));
+      } catch (error) {
+        console.error('Unable to save cart to localStorage:', error);
+      }
     }
 
     function formatCurrency(value) {
@@ -376,45 +447,115 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     }
 
     function generatePrintableHtml(items) {
-      const title = document.title || 'Pricing Calculator Cart';
       const now = new Date();
-      const rows = items.map(it => {
+      const quotationDate = now.toLocaleDateString('en-GB');
+      const quotationNumber = String(Math.floor(100000 + Math.random() * 900000));
+      const rows = items.map((it, i) => {
         const basisQuantity = it.area || it.quantity;
         const unit = getItemUnitPrice(it, basisQuantity);
         const subtotal = it.area ? unit * it.area * it.quantity : unit * it.quantity;
-        const qtyLabel = it.area ? `${it.quantity} × ${it.area.toFixed(4)} sq ft` : it.quantity;
-        return `<tr><td>${escapeHtml(it.item_name)}</td><td class="text-end">${escapeHtml(qtyLabel)}</td><td class="text-end">${formatCurrency(unit)}</td><td class="text-end">${formatCurrency(subtotal)}</td></tr>`;
+        const isArea = !!it.area || isAreaUnit(it.unit_label);
+        const sizeDim = isArea ? (it.dimension || it.area_label || '') : (it.item_name || it.description || '');
+        const material = isArea ? (it.item_name || '') : '';
+        const dimensionUnit = it.dimension_unit || (isArea ? 'FEET' : 'Number');
+        return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.description || it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td>${escapeHtml(material)}</td><td class="text-end">${escapeHtml(String(it.quantity))}</td><td class="text-end">${formatCurrency(unit)}</td><td class="text-end">${formatCurrency(subtotal)}</td></tr>`;
       }).join('');
       const total = items.reduce((s, it) => {
         const basisQuantity = it.area || it.quantity;
         const unit = getItemUnitPrice(it, basisQuantity);
         return s + (it.area ? unit * it.area * it.quantity : unit * it.quantity);
       }, 0);
+      const subtotal = total;
+      const gstInputVal = Number(GST_PERCENT) || 0;
+      const gstAmount = subtotal * (gstInputVal / 100);
+      const computedComplete = subtotal + gstAmount;
       return `
         <!doctype html>
         <html>
         <head>
           <meta charset="utf-8" />
-          <title>${title}</title>
+          <title>Quotation - Sagar Arts</title>
           <style>
-            body{font-family:Arial,Helvetica,sans-serif;padding:20px}
-            table{width:100%;border-collapse:collapse}
-            th,td{padding:8px;border-bottom:1px solid #ddd}
-            th{text-align:left}
+            body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:20px}
+            .header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
+            .brand-block{max-width:55%}
+            .brand-title{font-size:28px;margin:0;color:#0d2a56;letter-spacing:1px}
+            .brand-subtitle{margin:6px 0 0;font-size:14px;color:#555}
+            .brand-note{margin:6px 0 0;font-size:12px;color:#333}
+            .contact-box{border:1px solid #0d2a56;padding:14px;max-width:320px}
+            .contact-box h3{margin:0 0 8px;font-size:16px;color:#0d2a56}
+            .contact-box div{font-size:12px;line-height:1.5;color:#333}
+            .quote-info{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+            .quote-address,.quote-metadata{border:1px solid #ddd;padding:14px}
+            .quote-address h4,.quote-metadata h4{margin-top:0;font-size:14px;color:#0d2a56}
+            .quote-address div,.quote-metadata div{font-size:12px;line-height:1.6;color:#333;margin-bottom:8px}
+            .quote-metadata .field{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px}
+            table{width:100%;border-collapse:collapse;margin-bottom:20px}
+            th,td{padding:10px 8px;border:1px solid #ccc;font-size:12px}
+            th{text-align:left;background:#f4f6fb;color:#0d2a56}
+            td{text-align:left;vertical-align:top}
             .text-end{text-align:right}
-            .total{font-weight:700;margin-top:12px}
+            .text-center{text-align:center}
           </style>
         </head>
         <body>
-          <h2>${title}</h2>
-          <div>Printed: ${now.toLocaleString()}</div>
+          <div class="header">
+            <div class="brand-block">
+              <p class="brand-title">SAGAR ARTS</p>
+              <p class="brand-subtitle">DESIGN | PRINT | INSTALL</p>
+              <p class="brand-note">We Print Your Imagination</p>
+            </div>
+            <div class="contact-box">
+              <h3>Contact</h3>
+              <div><strong>Email:</strong> ${escapeHtml('Sagararts1@gmail.com')}</div>
+              <div><strong>Phone:</strong> ${escapeHtml('+91 9199115271, +91 9122796271')}</div>
+              <div><strong>Address:</strong> ${escapeHtml('S.S. Enclave, Near Mico, Old G.T. Road,   Sasaram-821115, Bihar')}</div>
+            </div>
+          </div>
+
+          <div class="quote-info">
+            <div class="quote-address">
+              <h4>To</h4>
+              <div>Customer Name: ____________________________</div>
+              <div>Address: _________________________________</div>
+              <div>Whatsapp Number: ___________________________________</div>
+              <div>Email: ____________________________________</div>
+            </div>
+            <div class="quote-metadata">
+              <h4>&nbsp;</h4>
+              <div class="field"><span>Quotation No</span><span>${escapeHtml(quotationNumber)}</span></div>
+              <div class="field"><span>Date</span><span>${escapeHtml(quotationDate)}</span></div>
+              <div class="field"><span>Valid Upto</span><span>20 Days</span></div>
+            </div>
+          </div>
+
           <table>
-            <thead><tr><th>Item</th><th>Qty</th><th class="text-end">Unit Price</th><th class="text-end">Subtotal</th></tr></thead>
+            <thead>
+              <tr>
+                <th>SR NO</th>
+                <th>Item Name</th>
+                <th>SIZE / DIMENSION</th>
+                <th>UNIT</th>
+                <th>MATERIAL / PAPER</th>
+                <th>QTY</th>
+                <th>RATE (₹)</th>
+                <th>AMOUNT (₹)</th>
+              </tr>
+            </thead>
             <tbody>
               ${rows}
             </tbody>
           </table>
-          <div class="total text-end">Grand Total: ${formatCurrency(total)}</div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:16px">
+            <table style="width:320px;border-collapse:collapse">
+              <tbody>
+                <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">Sub Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(subtotal)}</td></tr>
+                <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">GST (${gstInputVal}% )</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(gstAmount)}</td></tr>
+                <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:700;background:#d43f3a;color:#fff">Grand Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right;font-weight:700;background:#d43f3a;color:#fff">${formatCurrency(computedComplete)}</td></tr>
+              </tbody>
+            </table>
+          </div>
         </body>
         </html>
       `;
@@ -445,7 +586,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const items = getCartItems();
       cartBody.innerHTML = '';
       if (!items.length) {
-        cartBody.innerHTML = '<tr class="text-center text-muted"><td colspan="5">No items added yet.</td></tr>';
+        cartBody.innerHTML = '<tr class="text-center text-muted"><td colspan="9">No items added yet.</td></tr>';
         updateTotal();
         return;
       }
@@ -454,13 +595,19 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const basisQuantity = cartItem.area || cartItem.quantity;
         const liveUnitPrice = getItemUnitPrice(cartItem, basisQuantity);
         const subtotal = cartItem.area ? liveUnitPrice * cartItem.area * cartItem.quantity : liveUnitPrice * cartItem.quantity;
-        const quantityLabel = cartItem.area ? `${cartItem.quantity} × ${cartItem.area.toFixed(4)} sq ft` : cartItem.quantity;
         const row = document.createElement('tr');
+        const isArea = !!cartItem.area || isAreaUnit(cartItem.unit_label);
+        const sizeCell = isArea ? `<input type="text" class="form-control form-control-sm cart-dimension" style="min-width:120px;" value="${escapeHtml(cartItem.dimension || cartItem.area_label || '')}" data-index="${index}" placeholder="10*12">` : `<span class="text-muted">${escapeHtml(cartItem.item_name || cartItem.description || '')}</span>`;
+        const materialCell = isArea ? `${escapeHtml(cartItem.item_name)}` : '';
+        const dimensionUnit = cartItem.dimension_unit || (isArea ? 'FEET' : 'Number');
         row.innerHTML = `
-          <td>${cartItem.item_name}</td>
-          <td>
-            <div class="small text-muted mb-1">${escapeHtml(quantityLabel)}</div>
-            <input type="number" min="0.01" step="any" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}">
+          <td>${index + 1}</td>
+          <td>${escapeHtml(cartItem.description || cartItem.item_name)}</td>
+          <td>${sizeCell}</td>
+          <td class="text-center">${escapeHtml(dimensionUnit)}</td>
+          <td>${materialCell}</td>
+          <td style="width:140px;">
+            <input type="number" min="0.01" step="any" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}" style="min-width:120px;">
           </td>
           <td class="text-end">${formatCurrency(liveUnitPrice)}</td>
           <td class="text-end">${formatCurrency(subtotal)}</td>
@@ -473,26 +620,47 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
 
     function updateTotal() {
       const items = getCartItems();
-      const total = items.reduce((sum, item) => {
+      const subtotal = items.reduce((sum, item) => {
         const basisQuantity = item.area || item.quantity;
         const unit = getItemUnitPrice(item, basisQuantity);
         return sum + (item.area ? unit * item.area * item.quantity : unit * item.quantity);
       }, 0);
-      totalEl.textContent = formatCurrency(total);
+      const gstAmount = subtotal * (GST_PERCENT / 100);
+      const grandTotal = subtotal + gstAmount;
+      if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+      if (gstAmountEl) gstAmountEl.textContent = formatCurrency(gstAmount);
+      if (totalEl) totalEl.textContent = formatCurrency(grandTotal);
     }
+
+    function computeNumericSubtotal() {
+      const items = getCartItems();
+      return items.reduce((sum, item) => {
+        const basisQuantity = item.area || item.quantity;
+        const unit = getItemUnitPrice(item, basisQuantity);
+        return sum + (item.area ? unit * item.area * item.quantity : unit * item.quantity);
+      }, 0);
+    }
+
 
     function addItemToCart() {
       const selectedItems = getSelectedItems();
-      if (!selectedItems.length) return;
+      if (!selectedItems.length) {
+        alert('Please select at least one item before adding it to the cart.');
+        return;
+      }
+
       const areaItems = selectedItems.filter(item => isAreaUnit(item.unit_label));
       let quantity = 1;
-
       let area = null;
+      let areaLabel = '';
+      let length = 0;
+      let breadth = 0;
+
       if (selectedItems.length === 1 && areaItems.length === 1) {
         const lengthEl = document.getElementById('dimension-length');
         const breadthEl = document.getElementById('dimension-breadth');
-        const length = Math.max(0, Number(lengthEl ? lengthEl.value : 0) || 0);
-        const breadth = Math.max(0, Number(breadthEl ? breadthEl.value : 0) || 0);
+        length = Math.max(0, Number(lengthEl ? lengthEl.value : 0) || 0);
+        breadth = Math.max(0, Number(breadthEl ? breadthEl.value : 0) || 0);
         const mode = getSelectedUnitMode();
         area = parseFloat(toSquareFeet(length, breadth, mode).toFixed(4)) || 0;
         if (area <= 0) {
@@ -501,6 +669,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         }
         const qEl = document.getElementById('pricing-quantity');
         quantity = Math.max(1, Number(qEl ? qEl.value : 1) || 1);
+        const lengthLabel = `${length}${mode === 'in' ? 'in' : 'ft'}`;
+        const breadthLabel = `${breadth}${mode === 'in' ? 'in' : 'ft'}`;
+        areaLabel = `${lengthLabel}*${breadthLabel} (${area.toFixed(2)})`;
       } else {
         const qEl = document.getElementById('pricing-quantity');
         quantity = Math.max(1, Number(qEl ? qEl.value : 1) || 1);
@@ -509,25 +680,29 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const items = getCartItems();
 
       selectedItems.forEach(item => {
-        const basisQuantity = item.area ? item.area : area || quantity;
+        const basisQuantity = area || quantity;
         const currentUnitPrice = getItemUnitPrice(item, basisQuantity);
         const cartItemData = {
-          slug: item.slug,
+          slug: item.slug || item.id || '',
           category: categorySelect.value,
           item_name: item.item_name,
-          price: Number(item.price),
-          unit_price: Number(currentUnitPrice),
+          description: item.description || item.item_name || '',
+          price: Number(item.price || 0),
+          unit_price: Number(currentUnitPrice || 0),
           thresholds: Array.isArray(item.thresholds) ? item.thresholds : [],
           threshold_quantity: Number(item.threshold_quantity || 0),
           threshold_price: Number(item.threshold_price || 0),
           unit_label: item.unit_label,
           quantity: quantity,
-          area: area || null
+          area: area || null,
+          dimension: area ? `${length}*${breadth}` : '',
+          area_label: area ? areaLabel : '',
+          dimension_unit: area ? (getSelectedUnitMode() === 'in' ? 'INCH' : 'FEET') : 'Number'
         };
 
-        const shouldMerge = !isAreaUnit(item.unit_label) && items.some(cartItem => cartItem.slug === item.slug && Number(cartItem.unit_price || cartItem.price) === cartItemData.unit_price);
+        const shouldMerge = !isAreaUnit(item.unit_label) && items.some(cartItem => (cartItem.slug || cartItem.id || '') === (item.slug || item.id || '') && Number(cartItem.unit_price || cartItem.price) === Number(cartItemData.unit_price));
         if (shouldMerge) {
-          const existingIndex = items.findIndex(cartItem => cartItem.slug === item.slug && Number(cartItem.unit_price || cartItem.price) === cartItemData.unit_price);
+          const existingIndex = items.findIndex(cartItem => (cartItem.slug || cartItem.id || '') === (item.slug || item.id || '') && Number(cartItem.unit_price || cartItem.price) === Number(cartItemData.unit_price));
           if (existingIndex >= 0) {
             items[existingIndex].quantity = Number(items[existingIndex].quantity || 0) + Number(quantity);
           } else {
@@ -561,17 +736,48 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       addItemToCart();
     });
 
+    function parseDimensionValue(value) {
+      const cleaned = String(value).trim().toLowerCase().replace(/x/g, '*').replace(/\s+/g, '');
+      const parts = cleaned.split('*').filter(Boolean);
+      if (parts.length !== 2) return null;
+      const length = Number(parts[0]);
+      const breadth = Number(parts[1]);
+      if (Number.isFinite(length) && Number.isFinite(breadth) && length > 0 && breadth > 0) {
+        return { length, breadth, area: parseFloat((length * breadth).toFixed(4)), dimension: `${length}*${breadth}` };
+      }
+      return null;
+    }
+
     cartBody.addEventListener('change', (event) => {
-      if (!event.target.classList.contains('cart-quantity')) return;
-      const index = Number(event.target.dataset.index);
-      const quantity = Math.max(0.01, Number(event.target.value) || 0.01);
+      const target = event.target;
       const items = getCartItems();
-      if (items[index]) {
-        items[index].quantity = quantity;
-        const basisQuantity = items[index].area || quantity;
-        items[index].unit_price = getItemUnitPrice(items[index], basisQuantity);
-        saveCartItems(items);
-        renderCart();
+      if (target.classList.contains('cart-quantity')) {
+        const index = Number(target.dataset.index);
+        const quantity = Math.max(0.01, Number(target.value) || 0.01);
+        if (items[index]) {
+          items[index].quantity = quantity;
+          const basisQuantity = items[index].area || quantity;
+          items[index].unit_price = getItemUnitPrice(items[index], basisQuantity);
+          saveCartItems(items);
+          renderCart();
+        }
+        return;
+      }
+      if (target.classList.contains('cart-dimension')) {
+        const index = Number(target.dataset.index);
+        const parsed = parseDimensionValue(target.value);
+        if (items[index]) {
+          if (parsed) {
+            items[index].dimension = parsed.dimension;
+            items[index].area = parsed.area;
+            items[index].area_label = parsed.dimension;
+            const basisQuantity = items[index].area || items[index].quantity;
+            items[index].unit_price = getItemUnitPrice(items[index], basisQuantity);
+            saveCartItems(items);
+          }
+          renderCart();
+        }
+        return;
       }
     });
 
@@ -589,6 +795,8 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           alert('No items in cart to print.');
           return;
         }
+        // ensure totals are up-to-date
+        updateTotal();
         const html = generatePrintableHtml(items);
         const w = window.open('', '_blank');
         if (!w) {

@@ -73,7 +73,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['item_form'])) {
         $categoryId = isset($_POST['category_id']) ? (int)$_POST['category_id'] : 0;
         $itemName = trim($_POST['item_name'] ?? '');
-        $slug = trim($_POST['slug'] ?? '') ?: slugify($itemName);
+      $slug = trim($_POST['slug'] ?? '');
+      if ($slug === '') {
+        $categorySlug = '';
+        if ($categoryId > 0) {
+          $stmtCat = $conn->prepare('SELECT slug FROM pricing_categories WHERE id = ? LIMIT 1');
+          $stmtCat->bind_param('i', $categoryId);
+          $stmtCat->execute();
+          $resCat = $stmtCat->get_result()->fetch_assoc();
+          if ($resCat) {
+            $categorySlug = $resCat['slug'];
+          }
+          $stmtCat->close();
+        }
+        $slug = slugify(trim($categorySlug . ' ' . $itemName));
+      }
         $description = trim($_POST['description'] ?? '');
         $unitLabel = trim($_POST['unit_label'] ?? '');
         $sortOrder = (int)($_POST['sort_order'] ?? 0);
@@ -177,10 +191,10 @@ $items = $itemsResult ? $itemsResult->fetch_all(MYSQLI_ASSOC) : [];
                   <input type="hidden" name="item_id" value="<?php echo (int)($editingItem['id'] ?? 0); ?>">
                   <div class="mb-3">
                     <label class="form-label">Category</label>
-                    <select name="category_id" class="form-select" required>
+                    <select id="item-category" name="category_id" class="form-select" required>
                       <option value="">Select a category</option>
                       <?php foreach ($categories as $category): ?>
-                        <option value="<?php echo (int)$category['id']; ?>" <?php echo (!empty($editingItem['category_id']) && (int)$editingItem['category_id'] === (int)$category['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($category['name']); ?></option>
+                        <option value="<?php echo (int)$category['id']; ?>" data-slug="<?php echo htmlspecialchars($category['slug']); ?>" <?php echo (!empty($editingItem['category_id']) && (int)$editingItem['category_id'] === (int)$category['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($category['name']); ?></option>
                       <?php endforeach; ?>
                     </select>
                   </div>
@@ -194,7 +208,12 @@ $items = $itemsResult ? $itemsResult->fetch_all(MYSQLI_ASSOC) : [];
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Unit Label</label>
-                    <input type="text" name="unit_label" class="form-control" value="<?php echo htmlspecialchars($editingItem['unit_label'] ?? ''); ?>" placeholder="e.g. per sqft">
+                    <select name="unit_label" class="form-select" required>
+                      <option value="">Select a unit label</option>
+                        <option value="sqft" <?php echo (!empty($editingItem['unit_label']) && $editingItem['unit_label'] === 'sqft') ? 'selected' : ''; ?>>Per Sq Ft</option>
+                        <option value="piece" <?php echo (!empty($editingItem['unit_label']) && $editingItem['unit_label'] === 'piece') ? 'selected' : ''; ?>>Per Piece</option>
+                        <option value="sheet" <?php echo (!empty($editingItem['unit_label']) && $editingItem['unit_label'] === 'sheet') ? 'selected' : ''; ?>>Per Sheet</option>
+                    </select>
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Description</label>
@@ -338,8 +357,38 @@ $items = $itemsResult ? $itemsResult->fetch_all(MYSQLI_ASSOC) : [];
         });
       }
 
+      function bindItemAutoSlug(nameId, categoryId, slugId) {
+        var nameEl = document.getElementById(nameId);
+        var categoryEl = document.getElementById(categoryId);
+        var slugEl = document.getElementById(slugId);
+        if (!nameEl || !categoryEl || !slugEl) return;
+
+        function getCombined() {
+          var catSlug = '';
+          var sel = categoryEl.options[categoryEl.selectedIndex];
+          if (sel) catSlug = sel.dataset.slug || '';
+          return (catSlug + ' ' + (nameEl.value || '')).trim();
+        }
+
+        var lastAutoValue = slugify(getCombined());
+        if (slugEl.value && slugEl.value !== lastAutoValue) {
+          lastAutoValue = '';
+        }
+
+        function update() {
+          var generated = slugify(getCombined());
+          if (slugEl.value === '' || slugEl.value === lastAutoValue) {
+            slugEl.value = generated;
+            lastAutoValue = generated;
+          }
+        }
+
+        nameEl.addEventListener('input', update);
+        categoryEl.addEventListener('change', update);
+      }
+
       bindAutoSlug('category-name', 'category-slug');
-      bindAutoSlug('item-name', 'item-slug');
+      bindItemAutoSlug('item-name', 'item-category', 'item-slug');
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
