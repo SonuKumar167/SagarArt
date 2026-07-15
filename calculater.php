@@ -62,37 +62,46 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
             <div class="card-body">
               <form id="pricing-calculator">
                 <div class="mb-3">
-                  <label for="pricing-category" class="form-label">Product Category</label>
-                  <select id="pricing-category" class="form-select" required>
+                  <label class="form-label">Product Category</label>
+                  <div class="category-option-grid" id="pricing-category-options">
                     <?php foreach ($groupedPricingItems as $category => $items): ?>
-                      <option value="<?php echo htmlspecialchars($category); ?>"<?php echo $category === $initialCategory ? ' selected' : ''; ?>><?php echo htmlspecialchars($category); ?></option>
+                      <label class="category-option-card<?php echo $category === $initialCategory ? ' active' : ''; ?>">
+                        <input type="radio" name="pricing-category" value="<?php echo htmlspecialchars($category); ?>"<?php echo $category === $initialCategory ? ' checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars($category); ?></span>
+                      </label>
                     <?php endforeach; ?>
-                  </select>
+                  </div>
                 </div>
 
                 <div class="mb-3">
-                  <label for="pricing-item" class="form-label">Product Item(s)</label>
-                  <select id="pricing-item" class="form-select" multiple size="6" required>
+                  <label class="form-label">Product Item</label>
+                  <div class="category-option-grid" id="pricing-item-options">
                     <?php foreach ($initialItems as $item): ?>
-                      <option value="<?php echo htmlspecialchars($item['slug']); ?>"
-                        data-price="<?php echo htmlspecialchars($item['price']); ?>"
-                        data-threshold-quantity="<?php echo (int)$item['threshold_quantity']; ?>"
-                        data-threshold-price="<?php echo htmlspecialchars($item['threshold_price']); ?>"
-                        data-unit="<?php echo htmlspecialchars($item['unit_label']); ?>">
-                        <?php echo htmlspecialchars($item['item_name']); ?>
-                      </option>
+                      <?php $isInitialItem = (($item['slug'] ?? '') === ($initialItem['slug'] ?? '')); ?>
+                      <label class="category-option-card<?php echo $isInitialItem ? ' active' : ''; ?>">
+                        <input type="radio" name="pricing-item" value="<?php echo htmlspecialchars($item['slug']); ?>"<?php echo $isInitialItem ? ' checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars($item['item_name']); ?><?php if (!empty($item['unit_label'])): ?><span class="text-muted ms-1">(<?php echo htmlspecialchars($item['unit_label']); ?>)</span><?php endif; ?></span>
+                      </label>
                     <?php endforeach; ?>
-                  </select>
-                  <div class="form-text">Hold Ctrl/Cmd to select multiple items.</div>
+                  </div>
                 </div>
 
                 <div class="row g-3 mb-3">
-                  <div class="col-md-12">
-                    <label class="form-label">Quantity / Dimensions</label>
-                    <div id="quantity-controls"></div>
+                  <div class="col-12">
+                    <div class="control-panel" id="dimension-panel">
+                      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <label class="form-label mb-0">Dimensions</label>
+                        <div id="unit-mode-options" class="unit-choice-group"></div>
+                      </div>
+                      <div id="dimension-controls"></div>
+                    </div>
                   </div>
-                  <div class="col-md-12">
-                    <div id="dimension-suggestions" class="mt-2"></div>
+                  <div class="col-12">
+                    <div class="control-panel" id="quantity-panel">
+                      <label class="form-label">Quantity</label>
+                      <div id="quantity-controls"></div>
+                      <div id="dimension-suggestions" class="mt-3"></div>
+                    </div>
                   </div>
                   <div class="col-md-6 d-flex align-items-end">
                     <button id="add-item-button" type="button" class="btn btn-primary w-100">Add Item</button>
@@ -109,6 +118,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                         <th>UNIT</th>
                         <th>MATERIAL / PAPER</th>
                         <th>QTY</th>
+                        <th>SQFT</th>
                         <th class="text-end">RATE (₹)</th>
                         <th class="text-end">AMOUNT (₹)</th>
                         <th></th>
@@ -116,7 +126,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                     </thead>
                     <tbody id="pricing-cart-body">
                       <tr class="text-center text-muted">
-                        <td colspan="9">No items added yet.</td>
+                        <td colspan="10">No items added yet.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -194,9 +204,12 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const pricingGroups = <?php echo json_encode($groupedPricingItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
-    const categorySelect = document.getElementById('pricing-category');
-    const itemSelect = document.getElementById('pricing-item');
+    const categoryOptionsContainer = document.getElementById('pricing-category-options');
+    const itemOptionsContainer = document.getElementById('pricing-item-options');
     const quantityControls = document.getElementById('quantity-controls');
+    const dimensionControls = document.getElementById('dimension-controls');
+    const dimensionPanel = document.getElementById('dimension-panel');
+    const unitModeOptions = document.getElementById('unit-mode-options');
     const suggestionContainer = document.getElementById('dimension-suggestions');
     const totalEl = document.getElementById('pricing-total');
     const subtotalEl = document.getElementById('pricing-subtotal');
@@ -212,26 +225,26 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       return 'pricingCalculatorCart';
     }
 
-    function getSelectedItems() {
-      const selectedCategory = categorySelect.value;
-      const items = pricingGroups[selectedCategory] || [];
-      const selectedOptions = Array.from(itemSelect.selectedOptions || []);
+    function getSelectedCategory() {
+      const checkedOption = categoryOptionsContainer ? categoryOptionsContainer.querySelector('input[name="pricing-category"]:checked') : null;
+      return checkedOption ? checkedOption.value : '';
+    }
 
-      if (!selectedOptions.length && items.length) {
-        const fallbackOption = itemSelect.options[0];
-        if (fallbackOption) {
-          fallbackOption.selected = true;
-          selectedOptions.push(fallbackOption);
+    function getSelectedItems() {
+      const selectedCategory = getSelectedCategory();
+      const items = pricingGroups[selectedCategory] || [];
+      const checkedInput = itemOptionsContainer ? itemOptionsContainer.querySelector('input[name="pricing-item"]:checked') : null;
+      const selectedValue = checkedInput ? checkedInput.value : '';
+
+      if (!selectedValue && items.length && itemOptionsContainer) {
+        const fallbackInput = itemOptionsContainer.querySelector('input[name="pricing-item"]');
+        if (fallbackInput) {
+          fallbackInput.checked = true;
+          return items.filter(item => (item.slug || item.id || '') === (fallbackInput.value || ''));
         }
       }
 
-      const selectedValues = selectedOptions.map(option => option.value).filter(Boolean);
-      const normalizedValues = new Set(selectedValues);
-
-      return items.filter(item => {
-        const itemKey = item.slug || item.id || '';
-        return normalizedValues.has(itemKey);
-      });
+      return items.filter(item => (item.slug || item.id || '') === selectedValue);
     }
 
     function getSelectedItem() {
@@ -239,21 +252,20 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     }
 
     function renderItems() {
-      const selectedCategory = categorySelect.value;
+      const selectedCategory = getSelectedCategory();
       const items = pricingGroups[selectedCategory] || [];
-      itemSelect.innerHTML = '';
-      items.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.slug;
-        option.textContent = item.item_name;
-        option.dataset.price = item.price;
-        option.dataset.thresholdQuantity = item.threshold_quantity || 0;
-        option.dataset.thresholdPrice = item.threshold_price || 0;
-        option.dataset.unit = item.unit_label;
-        itemSelect.appendChild(option);
-      });
-      if (itemSelect.options.length > 0) {
-        itemSelect.options[0].selected = true;
+      if (itemOptionsContainer) {
+        itemOptionsContainer.innerHTML = '';
+        items.forEach((item, index) => {
+          const isActive = index === 0;
+          const label = document.createElement('label');
+          label.className = 'category-option-card' + (isActive ? ' active' : '');
+          label.innerHTML = `
+            <input type="radio" name="pricing-item" value="${escapeHtml(item.slug || item.id || '')}" ${isActive ? 'checked' : ''}>
+            <span>${escapeHtml(item.item_name)}${item.unit_label ? ` <span class="text-muted ms-1">(${escapeHtml(item.unit_label)})</span>` : ''}</span>
+          `;
+          itemOptionsContainer.appendChild(label);
+        });
       }
       updateUnitControls();
     }
@@ -261,7 +273,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     function isAreaUnit(unit) {
       if (!unit) return false;
       const u = unit.toString().toLowerCase().replace(/\s+/g, ' ').trim();
-      return u === 'sq ft' || u === 'sqft' || u === 'per sqft' || u === 'square feet' || u === 'square foot' || u === 'square ft';
+      return u === 'sq ft' || u === 'sqft' || u === 'per sqft' || u === 'square feet' || u === 'square foot' || u === 'square ft' || u === 'sq in' || u === 'sqin' || u === 'square inch' || u === 'square inches' || u === 'per sq inch' || u === 'per sqin';
     }
 
     function getSelectedUnitLabel() {
@@ -274,14 +286,26 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     }
 
     function getSelectedUnitMode() {
-      const modeSelect = document.getElementById('dimension-unit-mode');
-      return modeSelect ? modeSelect.value : 'ft';
+      const checkedOption = unitModeOptions ? unitModeOptions.querySelector('input[name="dimension-unit-mode"]:checked') : null;
+      return checkedOption ? checkedOption.value : 'ft';
+    }
+
+    function getInchDimensionFootValue(value) {
+      const inches = Number(value || 0);
+      if (!Number.isFinite(inches) || inches <= 0) return 0;
+      if (inches <= 36) return 3;
+      if (inches <= 48) return 4;
+      if (inches <= 60) return 5;
+      if (inches <= 72) return 6;
+      if (inches <= 96) return 8;
+      if (inches <= 120) return 10;
+      return Math.ceil(inches / 12);
     }
 
     function toSquareFeet(length, breadth, mode) {
       if (!length || !breadth) return 0;
-      const lengthFt = mode === 'in' ? length / 12 : length;
-      const breadthFt = mode === 'in' ? breadth / 12 : breadth;
+      const lengthFt = mode === 'in' ? getInchDimensionFootValue(length) : length;
+      const breadthFt = mode === 'in' ? getInchDimensionFootValue(breadth) : breadth;
       return parseFloat((lengthFt * breadthFt).toFixed(2));
     }
 
@@ -334,7 +358,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
 
     function renderDimensionSuggestions() {
       const selectedItems = getSelectedItems();
-      if (selectedItems.length !== 1) {
+      if (!selectedItems.length) {
         suggestionContainer.innerHTML = '';
         return;
       }
@@ -342,6 +366,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const item = selectedItems[0];
       const qtyEl = document.getElementById('pricing-quantity');
       const currentQuantity = qtyEl ? Number(qtyEl.value || 0) : 0;
+      const effectiveQuantity = currentQuantity > 0 ? currentQuantity : 1;
 
       if (isAreaUnit(item.unit_label)) {
         const mode = getSelectedUnitMode();
@@ -360,57 +385,78 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         return;
       }
 
-      if (currentQuantity <= 0) {
-        suggestionContainer.innerHTML = '<div class="text-muted">Enter a quantity to see pricing suggestions.</div>';
-        return;
-      }
-
       const thresholdSizes = Array.isArray(item.thresholds) ? item.thresholds.map(t => Number(t.min_quantity || 0)).filter(q => q > 0) : [];
-      const sampleQuantities = [currentQuantity, ...thresholdSizes.slice(0, 3)];
+      const sampleQuantities = [effectiveQuantity, ...thresholdSizes.slice(0, 3)];
       suggestionContainer.innerHTML = buildSuggestionRows(item, sampleQuantities);
     }
 
     function updateUnitControls() {
       const selectedItems = getSelectedItems();
       quantityControls.innerHTML = '';
+      dimensionControls.innerHTML = '';
+      unitModeOptions.innerHTML = '';
       const hasAreaUnit = selectedItems.length === 1 && isAreaUnit(selectedItems[0].unit_label);
       const unitLabel = getSelectedUnitLabel();
+      if (dimensionPanel) {
+        dimensionPanel.style.display = hasAreaUnit ? '' : 'none';
+      }
 
       if (hasAreaUnit) {
         quantityControls.innerHTML = `
-          <div class="row g-2">
-            <div class="col-4">
-              <select id="dimension-unit-mode" class="form-select">
-                <option value="ft">Feet</option>
-                <option value="in">Inches</option>
-              </select>
+          <div class="quantity-field-shell">
+            <label class="form-label small mb-2">Number of units</label>
+            <input id="pricing-quantity" type="number" min="1" value="1" class="form-control" placeholder="Quantity ${unitLabel ? `(${unitLabel})` : ''}" required>
+          </div>`;
+
+        dimensionControls.innerHTML = `
+          <div class="dimension-input-grid">
+            <div class="dimension-input-card">
+              <label class="form-label small">Length</label>
+              <input id="dimension-length" type="number" min="0" step="0.01" class="form-control" placeholder="Length">
             </div>
-            <div class="col-4">
-              <input id="dimension-length" type="number" min="0" step="0.01" class="form-control" placeholder="Length (${formatDimension(1, getSelectedUnitMode()).split(' ')[1]})">
+            <div class="dimension-input-card">
+              <label class="form-label small">Breadth</label>
+              <input id="dimension-breadth" type="number" min="0" step="0.01" class="form-control" placeholder="Breadth">
             </div>
-            <div class="col-4">
-              <input id="dimension-breadth" type="number" min="0" step="0.01" class="form-control" placeholder="Breadth (${formatDimension(1, getSelectedUnitMode()).split(' ')[1]})">
-            </div>
-            <div class="col-12 mt-2">
-              <input id="pricing-quantity" type="number" min="1" value="1" class="form-control" placeholder="Quantity ${unitLabel ? `(${unitLabel})` : ''}" required>
-            </div>
-            <div class="col-12 mt-2">
-              <div class="form-text">Computed area will be used as quantity in square feet, then multiplied by quantity.</div>
-            </div>
-          </div>
-        `;
+          </div>`;
+
+        unitModeOptions.innerHTML = `
+          <div class="unit-choice-group">
+            <label class="unit-choice-option active">
+              <input type="radio" name="dimension-unit-mode" value="ft" checked>
+              <span>Feet</span>
+            </label>
+            <label class="unit-choice-option">
+              <input type="radio" name="dimension-unit-mode" value="in">
+              <span>Inch</span>
+            </label>
+          </div>`;
 
         const lengthEl = document.getElementById('dimension-length');
         const breadthEl = document.getElementById('dimension-breadth');
-        const modeSelect = document.getElementById('dimension-unit-mode');
+        const modeInputs = unitModeOptions ? unitModeOptions.querySelectorAll('input[name="dimension-unit-mode"]') : [];
         const qtyEl = document.getElementById('pricing-quantity');
-        [lengthEl, breadthEl, modeSelect, qtyEl].forEach(el => {
+        [lengthEl, breadthEl, qtyEl].forEach(el => {
           if (!el) return;
           el.addEventListener('input', renderDimensionSuggestions);
           el.addEventListener('change', renderDimensionSuggestions);
         });
+        modeInputs.forEach(input => {
+          input.addEventListener('change', () => {
+            const activeMode = getSelectedUnitMode();
+            if (lengthEl) lengthEl.placeholder = `Length (${activeMode === 'in' ? 'in' : 'ft'})`;
+            if (breadthEl) breadthEl.placeholder = `Breadth (${activeMode === 'in' ? 'in' : 'ft'})`;
+            updateUnitModeVisualState();
+            renderDimensionSuggestions();
+          });
+        });
+        if (lengthEl) lengthEl.placeholder = `Length (${getSelectedUnitMode() === 'in' ? 'in' : 'ft'})`;
+        if (breadthEl) breadthEl.placeholder = `Breadth (${getSelectedUnitMode() === 'in' ? 'in' : 'ft'})`;
+        updateUnitModeVisualState();
       } else {
         quantityControls.innerHTML = `<input id="pricing-quantity" type="number" min="1" value="1" class="form-control" placeholder="Quantity ${unitLabel ? `(${unitLabel})` : ''}" required>`;
+        dimensionControls.innerHTML = '';
+        unitModeOptions.innerHTML = '';
         if (selectedItems.length > 1 && selectedItems.some(item => isAreaUnit(item.unit_label))) {
           quantityControls.insertAdjacentHTML('beforeend', '<div class="form-text text-warning">Multiple selection includes area-based items; use a shared quantity value only.</div>');
         }
@@ -422,6 +468,14 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         qtyEl.addEventListener('change', renderDimensionSuggestions);
       }
       renderDimensionSuggestions();
+    }
+
+    function updateUnitModeVisualState() {
+      if (!unitModeOptions) return;
+      unitModeOptions.querySelectorAll('.unit-choice-option').forEach(option => {
+        const input = option.querySelector('input');
+        option.classList.toggle('active', input && input.checked);
+      });
     }
 
     function getCartItems() {
@@ -458,7 +512,8 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const sizeDim = isArea ? (it.dimension || it.area_label || '') : (it.item_name || it.description || '');
         const material = isArea ? (it.item_name || '') : '';
         const dimensionUnit = it.dimension_unit || (isArea ? 'FEET' : 'Number');
-        return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.description || it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td>${escapeHtml(material)}</td><td class="text-end">${escapeHtml(String(it.quantity))}</td><td class="text-end">${formatCurrency(unit)}</td><td class="text-end">${formatCurrency(subtotal)}</td></tr>`;
+        const sqftValue = isArea && it.area ? Number(it.area).toFixed(2) : '';
+        return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.description || it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td>${escapeHtml(material)}</td><td class="text-end">${escapeHtml(String(it.quantity))}</td><td class="text-end">${escapeHtml(sqftValue)}</td><td class="text-end">${formatCurrency(unit)}</td><td class="text-end">${formatCurrency(subtotal)}</td></tr>`;
       }).join('');
       const total = items.reduce((s, it) => {
         const basisQuantity = it.area || it.quantity;
@@ -538,6 +593,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                 <th>UNIT</th>
                 <th>MATERIAL / PAPER</th>
                 <th>QTY</th>
+                <th>SQFT</th>
                 <th>RATE (₹)</th>
                 <th>AMOUNT (₹)</th>
               </tr>
@@ -547,14 +603,22 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
             </tbody>
           </table>
 
-          <div style="display:flex;justify-content:flex-end;margin-top:16px">
-            <table style="width:320px;border-collapse:collapse">
-              <tbody>
-                <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">Sub Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(subtotal)}</td></tr>
-                <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">GST (${gstInputVal}% )</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(gstAmount)}</td></tr>
-                <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:700;background:#d43f3a;color:#fff">Grand Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right;font-weight:700;background:#d43f3a;color:#fff">${formatCurrency(computedComplete)}</td></tr>
-              </tbody>
-            </table>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px">
+            <div style="width:48%">
+              <div style="border:1px solid #ccc;padding:16px;min-height:110px;display:flex;flex-direction:column;justify-content:center">
+                <div style="font-weight:700;margin-bottom:8px">Authorised Signatory</div>
+                <div style="font-size:13px;color:#333">Stamp / Signature of Seller</div>
+              </div>
+            </div>
+            <div style="width:48%;display:flex;justify-content:flex-end">
+              <table style="width:320px;border-collapse:collapse">
+                <tbody>
+                  <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">Sub Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(subtotal)}</td></tr>
+                  <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">GST (${gstInputVal}% )</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(gstAmount)}</td></tr>
+                  <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:700;background:#d43f3a;color:#fff">Grand Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right;font-weight:700;background:#d43f3a;color:#fff">${formatCurrency(computedComplete)}</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </body>
         </html>
@@ -600,6 +664,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const sizeCell = isArea ? `<input type="text" class="form-control form-control-sm cart-dimension" style="min-width:120px;" value="${escapeHtml(cartItem.dimension || cartItem.area_label || '')}" data-index="${index}" placeholder="10*12">` : `<span class="text-muted">${escapeHtml(cartItem.item_name || cartItem.description || '')}</span>`;
         const materialCell = isArea ? `${escapeHtml(cartItem.item_name)}` : '';
         const dimensionUnit = cartItem.dimension_unit || (isArea ? 'FEET' : 'Number');
+        const sqftValue = isArea && cartItem.area ? Number(cartItem.area).toFixed(2) : '';
         row.innerHTML = `
           <td>${index + 1}</td>
           <td>${escapeHtml(cartItem.description || cartItem.item_name)}</td>
@@ -609,6 +674,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           <td style="width:140px;">
             <input type="number" min="0.01" step="any" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}" style="min-width:120px;">
           </td>
+          <td class="text-end">${escapeHtml(sqftValue)}</td>
           <td class="text-end">${formatCurrency(liveUnitPrice)}</td>
           <td class="text-end">${formatCurrency(subtotal)}</td>
           <td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-cart-item" data-index="${index}">Remove</button></td>
@@ -684,7 +750,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const currentUnitPrice = getItemUnitPrice(item, basisQuantity);
         const cartItemData = {
           slug: item.slug || item.id || '',
-          category: categorySelect.value,
+          category: getSelectedCategory(),
           item_name: item.item_name,
           description: item.description || item.item_name || '',
           price: Number(item.price || 0),
@@ -724,13 +790,27 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       renderCart();
     }
 
-    categorySelect.addEventListener('change', () => {
-      renderItems();
-    });
+    if (categoryOptionsContainer) {
+      categoryOptionsContainer.addEventListener('change', (event) => {
+        if (event.target.matches('input[name="pricing-category"]')) {
+          categoryOptionsContainer.querySelectorAll('.category-option-card').forEach(card => {
+            card.classList.toggle('active', card.querySelector('input').checked);
+          });
+          renderItems();
+        }
+      });
+    }
 
-    itemSelect.addEventListener('change', () => {
-      updateUnitControls();
-    });
+    if (itemOptionsContainer) {
+      itemOptionsContainer.addEventListener('change', (event) => {
+        if (event.target.matches('input[name="pricing-item"]')) {
+          itemOptionsContainer.querySelectorAll('.category-option-card').forEach(card => {
+            card.classList.toggle('active', card.querySelector('input').checked);
+          });
+          updateUnitControls();
+        }
+      });
+    }
 
     addItemButton.addEventListener('click', () => {
       addItemToCart();
