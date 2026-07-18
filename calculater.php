@@ -116,7 +116,6 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                         <th>Item Name</th>
                         <th>SIZE / DIMENSION</th>
                         <th>UNIT</th>
-                        <th>MATERIAL / PAPER</th>
                         <th>QTY</th>
                         <th>SQFT</th>
                         <th class="text-end">RATE (₹)</th>
@@ -302,10 +301,16 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       return Math.ceil(inches / 12);
     }
 
+    function getInchDimensionFoot(value) {
+      const inches = Number(value || 0);
+      if (!Number.isFinite(inches) || inches <= 0) return 0;
+      return inches / 12;
+    }
+
     function toSquareFeet(length, breadth, mode) {
       if (!length || !breadth) return 0;
       const lengthFt = mode === 'in' ? getInchDimensionFootValue(length) : length;
-      const breadthFt = mode === 'in' ? getInchDimensionFootValue(breadth) : breadth;
+      const breadthFt = mode === 'in' ? getInchDimensionFoot(breadth) : breadth;
       return parseFloat((lengthFt * breadthFt).toFixed(2));
     }
 
@@ -510,10 +515,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const subtotal = it.area ? unit * it.area * it.quantity : unit * it.quantity;
         const isArea = !!it.area || isAreaUnit(it.unit_label);
         const sizeDim = isArea ? (it.dimension || it.area_label || '') : (it.item_name || it.description || '');
-        const material = isArea ? (it.item_name || '') : '';
         const dimensionUnit = it.dimension_unit || (isArea ? 'FEET' : 'Number');
         const sqftValue = isArea && it.area ? Number(it.area).toFixed(2) : '';
-        return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.description || it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td>${escapeHtml(material)}</td><td class="text-end">${escapeHtml(String(it.quantity))}</td><td class="text-end">${escapeHtml(sqftValue)}</td><td class="text-end">${formatCurrency(unit)}</td><td class="text-end">${formatCurrency(subtotal)}</td></tr>`;
+        return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td class="text-center">${escapeHtml(String(it.quantity))}</td><td class="text-center">${escapeHtml(sqftValue)}</td><td class="text-center">${formatCurrency(unit)}</td><td class="text-center">${formatCurrency(subtotal)}</td></tr>`;
       }).join('');
       const total = items.reduce((s, it) => {
         const basisQuantity = it.area || it.quantity;
@@ -529,58 +533,77 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         <html>
         <head>
           <meta charset="utf-8" />
-          <title>Quotation - Sagar Arts</title>
+          <title>Sagar Arts</title>
           <style>
-            body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:20px}
-            .header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
-            .brand-block{max-width:55%}
-            .brand-title{font-size:28px;margin:0;color:#0d2a56;letter-spacing:1px}
-            .brand-subtitle{margin:6px 0 0;font-size:14px;color:#555}
-            .brand-note{margin:6px 0 0;font-size:12px;color:#333}
-            .contact-box{border:1px solid #0d2a56;padding:14px;max-width:320px}
-            .contact-box h3{margin:0 0 8px;font-size:16px;color:#0d2a56}
-            .contact-box div{font-size:12px;line-height:1.5;color:#333}
-            .quote-info{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-            .quote-address,.quote-metadata{border:1px solid #ddd;padding:14px}
-            .quote-address h4,.quote-metadata h4{margin-top:0;font-size:14px;color:#0d2a56}
-            .quote-address div,.quote-metadata div{font-size:12px;line-height:1.6;color:#333;margin-bottom:8px}
-            .quote-metadata .field{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px}
-            table{width:100%;border-collapse:collapse;margin-bottom:20px}
-            th,td{padding:10px 8px;border:1px solid #ccc;font-size:12px}
-            th{text-align:left;background:#f4f6fb;color:#0d2a56}
-            td{text-align:left;vertical-align:top}
+            body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:16px}
+            .header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;padding:0 2px}
+            .header-left{flex:0 0 20%;min-width:0;text-align:left}
+            .header-center{flex:0 0 60%;min-width:0;text-align:center}
+            .header-right{flex:0 0 20%;min-width:0;text-align:right; padding-right: 30px}
+            .brand-block{max-width:100%;text-align:center}
+            .brand-title{font-size:32px;margin:0;color:#0d2a56;letter-spacing:1px, font-weight:700, font-family:Arial,Helvetica,sans-serif}
+            .brand-subtitle{margin:4px 0 0;font-size:13px;color:#333;font-weight:700}
+            .brand-note{margin:4px 0 0;font-size:12px;color:#444}
+            .contact-box{border:1px solid #0d2a56;padding:12px 14px;max-width:340px}
+            .contact-box h3{margin:0 0 8px;font-size:14px;color:#0d2a56}
+            .contact-box div{font-size:11px;line-height:1.4;color:#333;margin-bottom:4px}
+            .quote-info{display:block;margin:0 0 14px}
+            .quote-address{border:1px solid #ddd;padding:12px 14px}
+            .quote-address h4{margin:0 0 8px;font-size:13px;color:#0d2a56}
+            .detail-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;line-height:1.5;color:#333}
+            .detail-label{flex:0 0 112px;font-weight:700;color:#222}
+            .detail-value{flex:1;min-height:16px;border-bottom:1px solid #888}
+            .detail-row-inline{display:flex;flex-wrap:wrap;gap:10px}
+            .detail-row-inline .detail-field{display:flex;align-items:center;gap:6px;flex:1 1 220px;min-width:220px}
+            .detail-row-inline .detail-label{flex:0 0 auto}
+            table{width:100%;border-collapse:collapse;margin-bottom:12px}
+            th,td{padding:8px 8px;border:1px solid #ccc;font-size:12px;text-align:center}
+            th{background:#f4f6fb;color:#0d2a56}
+            td{vertical-align:middle}
             .text-end{text-align:right}
             .text-center{text-align:center}
           </style>
+          <link rel="stylesheet" href="assets/css/style.css">
         </head>
         <body>
           <div class="header">
-            <div class="brand-block">
+            <div class="header-left">
+            </div>
+            <div class="header-center brand-block">
               <p class="brand-title">SAGAR ARTS</p>
               <p class="brand-subtitle">DESIGN | PRINT | INSTALL</p>
-              <p class="brand-note">We Print Your Imagination</p>
+              <p class="brand-note">E-mail: sagararts1@mail.com | Mob.: 9199115271, 9122796271</p>
+              <p class="brand-note">S.S. Enclave, Near Mico Old G.T. Road, Sasaram, Bihar, 821115</p>
             </div>
-            <div class="contact-box">
-              <h3>Contact</h3>
-              <div><strong>Email:</strong> ${escapeHtml('Sagararts1@gmail.com')}</div>
-              <div><strong>Phone:</strong> ${escapeHtml('+91 9199115271, +91 9122796271')}</div>
-              <div><strong>Address:</strong> ${escapeHtml('S.S. Enclave, Near Mico, Old G.T. Road,   Sasaram-821115, Bihar')}</div>
+            <div class="header-right">
+              <p class="brand-note">FLEX PRINT<span style="font-weight: 900;">.</span></p>
+              <p class="brand-note">OFFSET PRINT<span style="font-weight: 900;">.</span></p>
+              <p class="brand-note">ECO SOLVENT<span style="font-weight: 900;">.</span></p>
+              <p class="brand-note">LASER CUTTING<span style="font-weight: 900;">.</span></p>
             </div>
           </div>
 
           <div class="quote-info">
             <div class="quote-address">
               <h4>To</h4>
-              <div>Customer Name: ____________________________</div>
-              <div>Address: _________________________________</div>
-              <div>Whatsapp Number: ___________________________________</div>
-              <div>Email: ____________________________________</div>
-            </div>
-            <div class="quote-metadata">
-              <h4>&nbsp;</h4>
-              <div class="field"><span>Quotation No</span><span>${escapeHtml(quotationNumber)}</span></div>
-              <div class="field"><span>Date</span><span>${escapeHtml(quotationDate)}</span></div>
-              <div class="field"><span>Valid Upto</span><span>20 Days</span></div>
+              <div class="detail-row">
+                <span class="detail-label">Customer Name</span>
+                <span class="detail-value"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Address</span>
+                <span class="detail-value"></span>
+              </div>
+              <div class="detail-row detail-row-inline">
+                <div class="detail-field">
+                  <span class="detail-label">Whatsapp Number</span>
+                  <span class="detail-value"></span>
+                </div>
+                <div class="detail-field">
+                  <span class="detail-label">Email</span>
+                  <span class="detail-value"></span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -591,7 +614,6 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                 <th>Item Name</th>
                 <th>SIZE / DIMENSION</th>
                 <th>UNIT</th>
-                <th>MATERIAL / PAPER</th>
                 <th>QTY</th>
                 <th>SQFT</th>
                 <th>RATE (₹)</th>
@@ -603,21 +625,19 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
             </tbody>
           </table>
 
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px">
-            <div style="width:48%">
-              <div style="border:1px solid #ccc;padding:16px;min-height:110px;display:flex;flex-direction:column;justify-content:center">
-                <div style="font-weight:700;margin-bottom:8px">Authorised Signatory</div>
-                <div style="font-size:13px;color:#333">Stamp / Signature of Seller</div>
-              </div>
-            </div>
-            <div style="width:48%;display:flex;justify-content:flex-end">
-              <table style="width:320px;border-collapse:collapse">
+          <div style="margin-top:24px;display:flex;flex-direction:column;align-items:flex-end">
+            <div style="width:320px;display:flex;justify-content:flex-end">
+              <table style="width:100%;border-collapse:collapse">
                 <tbody>
                   <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">Sub Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(subtotal)}</td></tr>
                   <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:600">GST (${gstInputVal}% )</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right">${formatCurrency(gstAmount)}</td></tr>
                   <tr><td style="border:1px solid #ccc;padding:8px 10px;font-weight:700;background:#d43f3a;color:#fff">Grand Total</td><td style="border:1px solid #ccc;padding:8px 10px;text-align:right;font-weight:700;background:#d43f3a;color:#fff">${formatCurrency(computedComplete)}</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div style="width:100%;margin-top:30px;justify-content:flex-start">
+              <div style="font-weight:700;margin-bottom:8px">Authorised Signatory</div>
+              <div style="font-size:13px;color:#333">Stamp / Signature of Seller</div>
             </div>
           </div>
         </body>
@@ -667,10 +687,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const sqftValue = isArea && cartItem.area ? Number(cartItem.area).toFixed(2) : '';
         row.innerHTML = `
           <td>${index + 1}</td>
-          <td>${escapeHtml(cartItem.description || cartItem.item_name)}</td>
+          <td>${escapeHtml(cartItem.item_name)}</td>
           <td>${sizeCell}</td>
           <td class="text-center">${escapeHtml(dimensionUnit)}</td>
-          <td>${materialCell}</td>
           <td style="width:140px;">
             <input type="number" min="0.01" step="any" value="${cartItem.quantity}" class="form-control form-control-sm cart-quantity" data-index="${index}" style="min-width:120px;">
           </td>
