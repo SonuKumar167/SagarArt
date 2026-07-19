@@ -567,7 +567,8 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         </head>
         <body>
           <div class="header">
-            <div class="header-left">
+            <div class="header-left text-center">
+               <img src="assets/SA LOGO_v02.png" alt="Sagar Arts Logo" style="max-width:100%;height:100px;object-fit:contain">
             </div>
             <div class="header-center brand-block">
               <p class="brand-title"><strong>SAGAR ARTS</strong></p>
