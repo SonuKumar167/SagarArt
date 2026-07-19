@@ -570,7 +570,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
             <div class="header-left">
             </div>
             <div class="header-center brand-block">
-              <p class="brand-title">SAGAR ARTS</p>
+              <p class="brand-title"><strong>SAGAR ARTS</strong></p>
               <p class="brand-subtitle">DESIGN | PRINT | INSTALL</p>
               <p class="brand-note">E-mail: sagararts1@mail.com | Mob.: 9199115271, 9122796271</p>
               <p class="brand-note">S.S. Enclave, Near Mico Old G.T. Road, Sasaram, Bihar, 821115</p>
@@ -582,7 +582,14 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
               <p class="brand-note">LASER CUTTING<span style="font-weight: 900;">.</span></p>
             </div>
           </div>
-
+          <div class="header-right" style="margin-bottom: 5px;padding-right: 2px">
+              <p class="brand-note">
+                  <strong>
+                      Quotation No - ${quotationNumber} &nbsp;&nbsp;&nbsp;
+                      Date - ${quotationDate}
+                  </strong>
+              </p>
+          </div>
           <div class="quote-info">
             <div class="quote-address">
               <h4>To</h4>
@@ -635,7 +642,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                 </tbody>
               </table>
             </div>
-            <div style="width:100%;margin-top:30px;justify-content:flex-start">
+            <div style="width:100%;margin-top:40px;justify-content:flex-start">
               <div style="font-weight:700;margin-bottom:8px">Authorised Signatory</div>
               <div style="font-size:13px;color:#333">Stamp / Signature of Seller</div>
             </div>
