@@ -516,7 +516,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const isArea = !!it.area || isAreaUnit(it.unit_label);
         const sizeDim = isArea ? (it.dimension || it.area_label || '') : (it.item_name || it.description || '');
         const dimensionUnit = it.dimension_unit || (isArea ? 'FEET' : 'Number');
-        const sqftValue = isArea && it.area ? Number(it.area).toFixed(2) : '';
+        const sqftValue = isArea && it.area ? Number(it.quantity *it.area).toFixed(2) : '';
         return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td class="text-center">${escapeHtml(String(it.quantity))}</td><td class="text-center">${escapeHtml(sqftValue)}</td><td class="text-center">${formatCurrency(unit)}</td><td class="text-center">${formatCurrency(subtotal)}</td></tr>`;
       }).join('');
       const total = items.reduce((s, it) => {
@@ -692,7 +692,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const sizeCell = isArea ? `<input type="text" class="form-control form-control-sm cart-dimension" style="min-width:120px;" value="${escapeHtml(cartItem.dimension || cartItem.area_label || '')}" data-index="${index}" placeholder="10*12">` : `<span class="text-muted">${escapeHtml(cartItem.item_name || cartItem.description || '')}</span>`;
         const materialCell = isArea ? `${escapeHtml(cartItem.item_name)}` : '';
         const dimensionUnit = cartItem.dimension_unit || (isArea ? 'FEET' : 'Number');
-        const sqftValue = isArea && cartItem.area ? Number(cartItem.area).toFixed(2) : '';
+        const sqftValue = isArea && cartItem.area ? Number(cartItem.quantity * cartItem.area).toFixed(2) : '';
         row.innerHTML = `
           <td>${index + 1}</td>
           <td>${escapeHtml(cartItem.item_name)}</td>
