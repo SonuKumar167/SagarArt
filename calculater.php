@@ -535,7 +535,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           <meta charset="utf-8" />
           <title>Sagar Arts</title>
           <style>
-            body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:16px}
+            body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;}
             .header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;padding:0 2px}
             .header-left{flex:0 0 20%;min-width:0;text-align:left}
             .header-center{flex:0 0 60%;min-width:0;text-align:center}
@@ -567,21 +567,8 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         </head>
         <body>
           <div class="header">
-            <div class="header-left text-center">
-               <img src="assets/SA LOGO_v02.png" alt="Sagar Arts Logo" style="max-width:100%;height:100px;object-fit:contain">
-            </div>
-            <div class="header-center brand-block">
-              <p class="brand-title"><strong>SAGAR ARTS</strong></p>
-              <p class="brand-subtitle">DESIGN | PRINT | INSTALL</p>
-              <p class="brand-note">E-mail: sagararts1@mail.com | Mob.: 9199115271, 9122796271</p>
-              <p class="brand-note">S.S. Enclave, Near Mico Old G.T. Road, Sasaram, Bihar, 821115</p>
-            </div>
-            <div class="header-right">
-              <p class="brand-note">FLEX PRINT<span style="font-weight: 900;">.</span></p>
-              <p class="brand-note">OFFSET PRINT<span style="font-weight: 900;">.</span></p>
-              <p class="brand-note">ECO SOLVENT<span style="font-weight: 900;">.</span></p>
-              <p class="brand-note">LASER CUTTING<span style="font-weight: 900;">.</span></p>
-            </div>
+            <img src="assets/print_header.jpeg" style="max-width:100%;">
+            
           </div>
           <div class="header-right" style="margin-bottom: 5px;padding-right: 2px">
               <p class="brand-note">
@@ -590,29 +577,6 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
                       Date - ${quotationDate}
                   </strong>
               </p>
-          </div>
-          <div class="quote-info">
-            <div class="quote-address">
-              <h4>To</h4>
-              <div class="detail-row">
-                <span class="detail-label">Customer Name</span>
-                <span class="detail-value"></span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Address</span>
-                <span class="detail-value"></span>
-              </div>
-              <div class="detail-row detail-row-inline">
-                <div class="detail-field">
-                  <span class="detail-label">Whatsapp Number</span>
-                  <span class="detail-value"></span>
-                </div>
-                <div class="detail-field">
-                  <span class="detail-label">Email</span>
-                  <span class="detail-value"></span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <table>
