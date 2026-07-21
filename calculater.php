@@ -536,7 +536,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
           <title>Sagar Arts</title>
           <style>
             body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;}
-            .header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;padding:0 2px}
+            .header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px; padding-top: 10px}
             .header-left{flex:0 0 20%;min-width:0;text-align:left}
             .header-center{flex:0 0 60%;min-width:0;text-align:center}
             .header-right{flex:0 0 20%;min-width:0;text-align:right; padding-right: 30px}
@@ -567,7 +567,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         </head>
         <body>
           <div class="header">
-            <img src="assets/print_header.jpeg" style="max-width:100%;">
+            <img src="assets/print_header.jpeg" style="max-width:100%; height:200px; width: stretch">
             
           </div>
           <div class="header-right" style="margin-bottom: 5px;padding-right: 2px">
