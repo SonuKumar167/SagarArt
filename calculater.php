@@ -510,9 +510,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const quotationDate = now.toLocaleDateString('en-GB');
       const quotationNumber = String(Math.floor(100000 + Math.random() * 900000));
       const rows = items.map((it, i) => {
-        const basisQuantity = it.area || it.quantity;
+        const basisQuantity = getPricingBasisQuantity(it, it.quantity, it.area);
         const unit = getItemUnitPrice(it, basisQuantity);
-        const subtotal = it.area ? unit * it.area * it.quantity : unit * it.quantity;
+        const subtotal = unit * basisQuantity;
         const isArea = !!it.area || isAreaUnit(it.unit_label);
         const sizeDim = isArea ? (it.dimension || it.area_label || '') : (it.item_name || it.description || '');
         const dimensionUnit = it.dimension_unit || (isArea ? 'FEET' : 'Number');
@@ -520,9 +520,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         return `<tr><td>${escapeHtml(String(i + 1))}</td><td>${escapeHtml(it.item_name)}</td><td>${escapeHtml(sizeDim)}</td><td class="text-center">${escapeHtml(dimensionUnit)}</td><td class="text-center">${escapeHtml(String(it.quantity))}</td><td class="text-center">${escapeHtml(sqftValue)}</td><td class="text-center">${formatCurrency(unit)}</td><td class="text-center">${formatCurrency(subtotal)}</td></tr>`;
       }).join('');
       const total = items.reduce((s, it) => {
-        const basisQuantity = it.area || it.quantity;
+        const basisQuantity = getPricingBasisQuantity(it, it.quantity, it.area);
         const unit = getItemUnitPrice(it, basisQuantity);
-        return s + (it.area ? unit * it.area * it.quantity : unit * it.quantity);
+        return s + unit * basisQuantity;
       }, 0);
       const subtotal = total;
       const gstInputVal = Number(GST_PERCENT) || 0;
@@ -621,6 +621,15 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
+    function getPricingBasisQuantity(item, quantity, area) {
+      const normalizedQuantity = Number(quantity || 0);
+      if (isAreaUnit(item?.unit_label)) {
+        const normalizedArea = Number(area || 0);
+        return normalizedArea > 0 ? normalizedQuantity * normalizedArea : normalizedQuantity;
+      }
+      return normalizedQuantity;
+    }
+
     function getItemUnitPrice(item, basisQuantity) {
       const basePrice = Number(item.price || 0);
       let bestPrice = basePrice;
@@ -648,9 +657,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       }
 
       items.forEach((cartItem, index) => {
-        const basisQuantity = cartItem.area || cartItem.quantity;
+        const basisQuantity = getPricingBasisQuantity(cartItem, cartItem.quantity, cartItem.area);
         const liveUnitPrice = getItemUnitPrice(cartItem, basisQuantity);
-        const subtotal = cartItem.area ? liveUnitPrice * cartItem.area * cartItem.quantity : liveUnitPrice * cartItem.quantity;
+        const subtotal = liveUnitPrice * basisQuantity;
         const row = document.createElement('tr');
         const isArea = !!cartItem.area || isAreaUnit(cartItem.unit_label);
         const sizeCell = isArea ? `<input type="text" class="form-control form-control-sm cart-dimension" style="min-width:120px;" value="${escapeHtml(cartItem.dimension || cartItem.area_label || '')}" data-index="${index}" placeholder="10*12">` : `<span class="text-muted">${escapeHtml(cartItem.item_name || cartItem.description || '')}</span>`;
@@ -678,9 +687,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     function updateTotal() {
       const items = getCartItems();
       const subtotal = items.reduce((sum, item) => {
-        const basisQuantity = item.area || item.quantity;
+        const basisQuantity = getPricingBasisQuantity(item, item.quantity, item.area);
         const unit = getItemUnitPrice(item, basisQuantity);
-        return sum + (item.area ? unit * item.area * item.quantity : unit * item.quantity);
+        return sum + unit * basisQuantity;
       }, 0);
       const gstAmount = subtotal * (GST_PERCENT / 100);
       const grandTotal = subtotal + gstAmount;
@@ -692,9 +701,9 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
     function computeNumericSubtotal() {
       const items = getCartItems();
       return items.reduce((sum, item) => {
-        const basisQuantity = item.area || item.quantity;
+        const basisQuantity = getPricingBasisQuantity(item, item.quantity, item.area);
         const unit = getItemUnitPrice(item, basisQuantity);
-        return sum + (item.area ? unit * item.area * item.quantity : unit * item.quantity);
+        return sum + unit * basisQuantity;
       }, 0);
     }
 
@@ -737,7 +746,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       const items = getCartItems();
 
       selectedItems.forEach(item => {
-        const basisQuantity = area || quantity;
+        const basisQuantity = getPricingBasisQuantity(item, quantity, area);
         const currentUnitPrice = getItemUnitPrice(item, basisQuantity);
         const cartItemData = {
           slug: item.slug || item.id || '',
@@ -827,7 +836,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
         const quantity = Math.max(0.01, Number(target.value) || 0.01);
         if (items[index]) {
           items[index].quantity = quantity;
-          const basisQuantity = items[index].area || quantity;
+          const basisQuantity = getPricingBasisQuantity(items[index], quantity, items[index].area);
           items[index].unit_price = getItemUnitPrice(items[index], basisQuantity);
           saveCartItems(items);
           renderCart();
@@ -842,7 +851,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
             items[index].dimension = parsed.dimension;
             items[index].area = parsed.area;
             items[index].area_label = parsed.dimension;
-            const basisQuantity = items[index].area || items[index].quantity;
+            const basisQuantity = getPricingBasisQuantity(items[index], items[index].quantity, items[index].area);
             items[index].unit_price = getItemUnitPrice(items[index], basisQuantity);
             saveCartItems(items);
           }
