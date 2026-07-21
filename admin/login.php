@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $stmt->get_result();
     $admin = $result->fetch_assoc();
 
-    if ($admin && password_verify($password, $admin['password_hash'])) {
+    if ($admin && verifyAdminPassword($password, $admin['password_hash'])) {
         $_SESSION['admin_logged_in'] = true;
         header('Location: dashboard.php');
         exit;

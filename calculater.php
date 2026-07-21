@@ -2,6 +2,27 @@
 require 'includes/config.php';
 
 $siteSettings = getSiteSettings($conn);
+$loginError = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['calculator_login'])) {
+  $username = trim($_POST['username'] ?? '');
+  $password = $_POST['password'] ?? '';
+
+  $stmt = $conn->prepare('SELECT password_hash FROM admin_users WHERE username = ? LIMIT 1');
+  $stmt->bind_param('s', $username);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $admin = $result->fetch_assoc();
+
+  if ($admin && verifyAdminPassword($password, $admin['password_hash'])) {
+    $_SESSION['calculator_logged_in'] = true;
+    $calculatorAccessGranted = true;
+  }
+
+  $loginError = 'Invalid username or password.';
+}
+
+$calculatorAccessGranted = !empty($_SESSION['calculator_logged_in']);
 
 // Fetch active categories and their pricing items (use category_id when present, fallback to category name)
 $groupedPricingItems = [];
@@ -52,6 +73,7 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
 <body>
   <?php include 'includes/header.php'; ?>
 
+  <?php if ($calculatorAccessGranted): ?>
   <section class="section-shell">
     <div class="container">
       <div class="row align-items-center gy-4">
@@ -198,6 +220,37 @@ $pageDescription = 'Estimate your print and signage cost instantly with our pric
       </div>
     </div>
   </section>
+  <?php else: ?>
+  <section class="section-shell">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-5">
+          <div class="card section-card">
+            <div class="card-body p-4">
+              <h1 class="h3 mb-2">Pricing Calculator Access</h1>
+              <p class="text-muted">Please sign in to view the pricing calculator.</p>
+              <?php if (!empty($loginError)): ?>
+                <div class="alert alert-danger"><?php echo htmlspecialchars($loginError); ?></div>
+              <?php endif; ?>
+              <form method="post">
+                <input type="hidden" name="calculator_login" value="1">
+                <div class="mb-3">
+                  <label class="form-label">Username</label>
+                  <input type="text" name="username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Password</label>
+                  <input type="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <?php endif; ?>
 
   <?php include 'includes/footer.php'; ?>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -185,6 +185,18 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
   `password_hash` VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    function verifyAdminPassword($password, $storedValue) {
+        if (!is_string($storedValue) || $storedValue === '') {
+            return false;
+        }
+
+        if (preg_match('/^\$2[aby]\$/', $storedValue)) {
+            return password_verify($password, $storedValue);
+        }
+
+        return hash_equals($storedValue, (string) $password);
+    }
+
     function addColumnIfMissing($conn, $table, $column, $definition) {
         $result = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
         if ($result && $result->num_rows === 0) {
@@ -237,6 +249,7 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
 
     $adminPasswordHash = password_hash('admin123', PASSWORD_DEFAULT);
     $conn->query("INSERT INTO `admin_users` (username, password_hash) VALUES ('admin', '$adminPasswordHash') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)");
+    $conn->query("INSERT INTO `admin_users` (username, password_hash) VALUES ('Staff_Price', 'StaffPrice@7890') ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)");
     $conn->query("INSERT INTO `pages` (slug, title, content, hero_title, hero_text, image_url) VALUES
       ('home', 'Home', 'Welcome to Sagar Art. We build polished digital experiences for modern brands.', 'Welcome to Sagar Art', 'We create websites, branding, and digital services that help businesses grow.', 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80'),
       ('services', 'Services', 'Our services are crafted to solve business needs with speed and creativity.', 'Our Services', 'Explore the services we offer to help your business grow and stand out.', 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80'),
