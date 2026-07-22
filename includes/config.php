@@ -392,7 +392,7 @@ if (!defined('SAGARART_CONFIG_LOADED')) {
     }
 
     function getPageSections($conn, $slug) {
-        $stmt = $conn->prepare('SELECT id, title, content, section_type, image_url, video_url, button_text, button_link, settings FROM page_sections WHERE page_slug = ? ORDER BY sort_order ASC, id ASC');
+        $stmt = $conn->prepare('SELECT id, title, content, section_type, image_url, video_url, button_text, button_link, settings, sort_order FROM page_sections WHERE page_slug = ? ORDER BY sort_order ASC, id ASC');
         $stmt->bind_param('s', $slug);
         $stmt->execute();
         $result = $stmt->get_result();

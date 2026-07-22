@@ -90,6 +90,39 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
               <?php endif; ?>
             </div>
           <?php endif; ?>
+        <?php elseif ($section['section_type'] === 'clients'): ?>
+          <?php if (!empty($section['title'])): ?><h3 class="mb-0"><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
+          <?php if (!empty($section['content'])): ?><p class="mb-4"><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>
+          <?php $clientSectionSettings = json_decode($section['settings'] ?? '', true); $clientLogos = is_array($clientSectionSettings['clients'] ?? null) ? $clientSectionSettings['clients'] : []; $filteredClientLogos = []; foreach ($clientLogos as $clientLogo) { $clientLogoUrl = is_array($clientLogo) ? ($clientLogo['url'] ?? '') : $clientLogo; if ($clientLogoUrl !== '') { $filteredClientLogos[] = $clientLogoUrl; } } $clientLogoSlides = []; $visibleLogoCount = 6; $logoCount = count($filteredClientLogos); if ($logoCount > 0) { if ($logoCount <= $visibleLogoCount) { $clientLogoSlides[] = $filteredClientLogos; } else { for ($i = 0; $i <= $logoCount - $visibleLogoCount; $i++) { $clientLogoSlides[] = array_slice($filteredClientLogos, $i, $visibleLogoCount); } } } ?>
+          <?php if (!empty($clientLogoSlides)): ?>
+            <div id="clientSectionCarousel<?php echo (int)$section['id']; ?>" class="carousel slide client-logo-carousel mt-3" data-bs-ride="carousel">
+              <div class="carousel-inner rounded-4 overflow-hidden">
+                <?php foreach ($clientLogoSlides as $slideIndex => $clientLogoGroup): ?>
+                  <div class="carousel-item w-100<?php echo $slideIndex === 0 ? ' active' : ''; ?>">
+                    <div class="row g-3 justify-content-center align-items-stretch">
+                      <?php foreach ($clientLogoGroup as $clientLogoUrl): ?>
+                        <div class="col-6 col-md-4 col-lg-2">
+                          <div class="client-logo-card d-flex justify-content-center align-items-center h-100">
+                            <img src="<?php echo htmlspecialchars($clientLogoUrl); ?>" class="client-logo-img" alt="Client logo">
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+              <?php if (count($clientLogoSlides) > 1): ?>
+                <button class="carousel-control-prev" type="button" data-bs-target="#clientSectionCarousel<?php echo (int)$section['id']; ?>" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#clientSectionCarousel<?php echo (int)$section['id']; ?>" data-bs-slide="next">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Next</span>
+                </button>
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
         <?php elseif ($section['section_type'] === 'services'): ?>
           <?php if (!empty($section['title'])): ?><h3 class="mb-0"><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
           <?php if (!empty($section['content'])): ?><p class="mb-4"><?php echo nl2br(htmlspecialchars($section['content'])); ?></p><?php endif; ?>

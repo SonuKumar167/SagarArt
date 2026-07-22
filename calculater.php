@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['calculator_login'])) 
   $username = trim($_POST['username'] ?? '');
   $password = $_POST['password'] ?? '';
 
-  $stmt = $conn->prepare('SELECT password_hash FROM admin_users WHERE username = ? LIMIT 1');
+  $stmt = $conn->prepare('SELECT password_hash FROM admin_users WHERE username = ? and user_type = "calculator" LIMIT 1');
   $stmt->bind_param('s', $username);
   $stmt->execute();
   $result = $stmt->get_result();

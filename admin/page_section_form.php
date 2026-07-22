@@ -10,6 +10,7 @@ $slug = $_GET['slug'] ?? '';
 $sectionId = isset($_GET['section_id']) ? (int)$_GET['section_id'] : 0;
 $deleteSectionId = isset($_GET['delete_section']) ? (int)$_GET['delete_section'] : 0;
 $removeSlideIndex = isset($_GET['remove_slide']) ? (int)$_GET['remove_slide'] : null;
+$removeClientIndex = isset($_GET['remove_client']) ? (int)$_GET['remove_client'] : null;
 $section = null;
 if ($deleteSectionId) {
     $stmt = $conn->prepare('DELETE FROM page_sections WHERE id = ? AND page_slug = ? LIMIT 1');
@@ -32,6 +33,21 @@ if ($section && $removeSlideIndex !== null && $section['section_type'] === 'slid
     if (isset($slides[$removeSlideIndex])) {
         array_splice($slides, $removeSlideIndex, 1);
         $settingsDecoded['slides'] = array_values($slides);
+        $stmt = $conn->prepare('UPDATE page_sections SET settings = ? WHERE id = ?');
+        $settingsJson = json_encode($settingsDecoded);
+        $stmt->bind_param('si', $settingsJson, $sectionId);
+        $stmt->execute();
+    }
+    header('Location: page_section_form.php?slug=' . urlencode($slug) . '&section_id=' . $sectionId);
+    exit;
+}
+
+if ($section && $removeClientIndex !== null && $section['section_type'] === 'clients') {
+    $settingsDecoded = json_decode($section['settings'] ?? '', true) ?: [];
+    $clients = is_array($settingsDecoded['clients'] ?? null) ? $settingsDecoded['clients'] : [];
+    if (isset($clients[$removeClientIndex])) {
+        array_splice($clients, $removeClientIndex, 1);
+        $settingsDecoded['clients'] = array_values($clients);
         $stmt = $conn->prepare('UPDATE page_sections SET settings = ? WHERE id = ?');
         $settingsJson = json_encode($settingsDecoded);
         $stmt->bind_param('si', $settingsJson, $sectionId);
@@ -90,6 +106,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $serviceIds = array_map('intval', $selected);
       $displayCount = (int)($_POST['service_count'] ?? count($serviceIds));
       $settings = ['service_ids' => $serviceIds, 'count' => $displayCount];
+      $settingsJson = json_encode($settings);
+    } elseif ($section_type === 'clients') {
+      $existingClientLogos = $_POST['existing_client_logos'] ?? [];
+      if (!is_array($existingClientLogos)) {
+        $existingClientLogos = [$existingClientLogos];
+      }
+      $clientLogos = [];
+      foreach ($existingClientLogos as $clientLogo) {
+        $clientLogo = trim((string)$clientLogo);
+        if ($clientLogo !== '') {
+          $clientLogos[] = $clientLogo;
+        }
+      }
+      if (!empty($_FILES['client_logo_files']['name']) && is_array($_FILES['client_logo_files']['name'])) {
+        foreach ($_FILES['client_logo_files']['name'] as $index => $fileName) {
+          if (empty($fileName)) {
+            continue;
+          }
+          $uploadedClientLogo = uploadFile([
+            'name' => $fileName,
+            'tmp_name' => $_FILES['client_logo_files']['tmp_name'][$index] ?? '',
+            'error' => $_FILES['client_logo_files']['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+          ]);
+          if ($uploadedClientLogo !== '') {
+            $clientLogos[] = $uploadedClientLogo;
+          }
+        }
+      }
+      $settings = ['clients' => $clientLogos];
       $settingsJson = json_encode($settings);
     }
 
@@ -171,6 +216,7 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
                   <option value="content" <?php echo (($section['section_type'] ?? 'content') === 'content' ? 'selected' : ''); ?>>Content</option>
                   <option value="slider" <?php echo (($section['section_type'] ?? 'content') === 'slider' ? 'selected' : ''); ?>>Slider</option>
                   <option value="services" <?php echo (($section['section_type'] ?? 'content') === 'services' ? 'selected' : ''); ?>>Featured Services</option>
+                  <option value="clients" <?php echo (($section['section_type'] ?? 'content') === 'clients' ? 'selected' : ''); ?>>Our Clients</option>
                 </select>
               </div>
               <?php
@@ -250,6 +296,37 @@ $sections = $conn->query('SELECT id, title, section_type, sort_order FROM page_s
                   <input type="text" name="new_slide_link" class="form-control" placeholder="Optional redirect URL for new slide">
                 </div>
               <?php endif; ?>
+              <?php if (($section['section_type'] ?? '') === 'clients' || empty($section)): ?>
+                <?php $clientLogos = []; if (!empty($section['settings'])) { $settingsDecoded = json_decode($section['settings'], true); if (is_array($settingsDecoded) && !empty($settingsDecoded['clients']) && is_array($settingsDecoded['clients'])) { $clientLogos = $settingsDecoded['clients']; } } ?>
+                <div class="mb-3">
+                  <label class="form-label">Current Client Logos</label>
+                  <?php if (!empty($clientLogos)): ?>
+                    <div class="row gy-3">
+                      <?php foreach ($clientLogos as $index => $clientLogo): ?>
+                        <?php $clientLogoUrl = is_array($clientLogo) ? ($clientLogo['url'] ?? '') : $clientLogo; ?>
+                        <?php if ($clientLogoUrl === '') continue; ?>
+                        <div class="col-md-4">
+                          <div class="card p-2">
+                            <img src="<?php echo htmlspecialchars('/' . ltrim($clientLogoUrl, '/\\')); ?>" alt="Client logo <?php echo $index + 1; ?>" class="img-fluid rounded mb-2" style="max-height: 140px; object-fit: contain;">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <span class="small">Logo <?php echo $index + 1; ?></span>
+                              <a href="page_section_form.php?slug=<?php echo urlencode($slug); ?>&section_id=<?php echo (int)$sectionId; ?>&remove_client=<?php echo $index; ?>" class="btn btn-sm btn-outline-danger">Remove</a>
+                            </div>
+                            <input type="hidden" name="existing_client_logos[]" value="<?php echo htmlspecialchars($clientLogoUrl); ?>">
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    </div>
+                  <?php else: ?>
+                    <div class="small text-muted">No client logos uploaded yet.</div>
+                  <?php endif; ?>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Upload Client Logos</label>
+                  <input type="file" name="client_logo_files[]" accept="image/*" class="form-control" multiple>
+                  <div class="small text-muted mt-2">Select multiple logo files to display in the client carousel.</div>
+                </div>
+              <?php endif; ?>
               <div class="mb-3">
                 <label class="form-label">Content</label>
                 <textarea name="content" class="form-control" rows="4"><?php echo htmlspecialchars($section['content'] ?? ''); ?></textarea>
@@ -307,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var fileRow = document.querySelector('.file-upload-row');
   function toggle() {
     if (!sel || !fileRow) return;
-    if (sel.value === 'slider') {
+    if (sel.value === 'slider' || sel.value === 'clients' || sel.value === 'services') {
       fileRow.style.display = 'none';
     } else {
       fileRow.style.display = '';

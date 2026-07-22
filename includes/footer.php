@@ -70,5 +70,61 @@ $footerLinks = getFooterMenuItems($conn);
 <script>
   $(function () {
     $('.navbar').addClass('shadow-sm');
+
+    function updateClientLogoCarousels() {
+      $('.client-logo-carousel').each(function () {
+        var $carousel = $(this);
+        var $inner = $carousel.find('.carousel-inner');
+        var windowWidth = $(window).width();
+        var mobileBreakpoint = 768;
+
+        if (windowWidth < mobileBreakpoint) {
+          if ($carousel.data('clientMobileSetup')) {
+            return;
+          }
+
+          var originalHtml = $inner.html();
+          $carousel.data('clientOriginalInner', originalHtml);
+          var $logoCards = $inner.find('.client-logo-card').clone(true);
+          if ($logoCards.length === 0) {
+            return;
+          }
+
+          $inner.empty();
+          $logoCards.each(function (index, card) {
+            var $card = $(card);
+            var $slideContent = $('<div class="w-100 d-flex justify-content-center align-items-center py-4"></div>').append($card);
+            var $item = $('<div class="carousel-item w-100"></div>').append($slideContent);
+            if (index === 0) {
+              $item.addClass('active');
+            }
+            $inner.append($item);
+          });
+
+          $carousel.find('.carousel-item').removeClass('active').first().addClass('active');
+          var existingCarousel = bootstrap.Carousel.getInstance($carousel[0]);
+          if (existingCarousel) {
+            existingCarousel.dispose();
+          }
+          new bootstrap.Carousel($carousel[0]);
+          $carousel.data('clientMobileSetup', true);
+        } else {
+          if (!$carousel.data('clientMobileSetup')) {
+            return;
+          }
+
+          var originalHtml = $carousel.data('clientOriginalInner');
+          if (originalHtml) {
+            $inner.html(originalHtml);
+            $inner.find('.carousel-item').removeClass('active').first().addClass('active');
+          }
+          $carousel.removeData('clientMobileSetup');
+          $carousel.removeData('clientOriginalInner');
+        }
+      });
+    }
+
+    updateClientLogoCarousels();
+    $(window).on('resize', updateClientLogoCarousels);
   });
 </script>

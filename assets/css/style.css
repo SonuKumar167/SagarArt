@@ -27,6 +27,86 @@ img, video {
   height: auto;
 }
 
+.client-logo-card {
+  min-height: 110px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-logo-img {
+  max-height: 60px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  filter: none;
+  opacity: 1;
+}
+
+.client-logo-carousel .carousel-item {
+  transition: transform 0.4s ease;
+}
+
+.client-logo-carousel .carousel-item .row {
+  margin: 0;
+}
+
+.client-logo-carousel .col-6,
+.client-logo-carousel .col-md-4,
+.client-logo-carousel .col-lg-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .client-logo-carousel .carousel-inner {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .client-logo-carousel .carousel-item {
+    display: none;
+  }
+
+  .client-logo-carousel .carousel-item.active,
+  .client-logo-carousel .carousel-item.carousel-item-next,
+  .client-logo-carousel .carousel-item.carousel-item-prev {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .client-logo-carousel .carousel-item .row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .client-logo-carousel .col-6,
+  .client-logo-carousel .col-md-4,
+  .client-logo-carousel .col-lg-2 {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .client-logo-carousel .client-logo-card {
+    width: 100%;
+    max-width: 260px;
+    min-height: auto;
+    padding: 0.75rem;
+  }
+
+  .client-logo-carousel .client-logo-img {
+    max-height: 80px;
+    width: auto;
+    margin: 0 auto;
+  }
+}
+
 a {
   color: inherit;
 }
