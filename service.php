@@ -29,7 +29,7 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
 <body>
   <?php include 'includes/header.php'; ?>
 
-  <section class="page-hero text-white d-flex align-items-center" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($service['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($service['image_url'] ?? ''); ?>'); background-size: cover; background-repeat: no-repeat; background-position: center center; color: <?php echo htmlspecialchars($service['hero_text_color'] ?? '#ffffff'); ?>;">
+  <section class="page-hero text-white d-flex align-items-center <?php echo !empty($service['hero_video_url']) ? 'video-view' : ''; ?>" style="background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.16)), <?php echo htmlspecialchars($service['hero_bg_color'] ?? '#4f46e5'); ?>; background-image: linear-gradient(135deg, rgba(0,0,0,0.32), rgba(0,0,0,0.12)), url('<?php echo htmlspecialchars($service['image_url'] ?? ''); ?>'); background-size: cover; background-repeat: no-repeat; background-position: center center; color: <?php echo htmlspecialchars($service['hero_text_color'] ?? '#ffffff'); ?>;">
     <div class="container">
       <div class="row align-items-center gy-4">
         <div class="col-lg-7">

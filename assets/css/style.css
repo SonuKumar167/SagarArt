@@ -344,6 +344,22 @@ a {
   white-space: normal;
 }
 
+.video-view {    
+    position: relative;
+    overflow: hidden;
+    padding: 2rem 0;
+    min-height: 500px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(59, 130, 246, 0.93));
+    background-size: cover, cover, cover !important;
+    background-repeat: no-repeat !important;
+    background-position: center center !important;
+    background-attachment: scroll;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    background-origin: border-box;
+    background-clip: border-box;
+}
+
 @media (max-width: 768px) {
   .hero-section,
   .page-hero {
@@ -365,6 +381,16 @@ a {
   .page-hero .row {
     min-height: clamp(480px, 82vh, 620px) !important;
   }
+
+  .video-view {    
+    padding: 1.5rem 0 !important;
+    min-height: 520px !important;
+    height: auto !important;
+    background-size: cover, cover, cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+  }
+
   .mb-view {
     height: 0px;
     margin-bottom: 15px;
@@ -410,6 +436,15 @@ a {
   .page-hero .col-lg-5 {
     flex: 0 0 100%;
     max-width: 100%;
+  }
+
+  .video-view {    
+    padding: 1rem 0 !important;
+    min-height: 480px !important;
+    height: auto !important;
+    background-size: cover, cover, cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
   }
 
   .mb-view {
