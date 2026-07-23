@@ -37,7 +37,7 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
           <p class="lead"><?php echo htmlspecialchars($service['hero_text'] ?? ''); ?></p>
           <?php $heroButtonText = trim($service['button_text'] ?? ''); $heroButtonLink = trim($service['button_link'] ?? ''); ?>
           <?php if ($heroButtonText !== ''): ?>
-            <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg"><?php echo htmlspecialchars($heroButtonText); ?></a>
+            <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg mb-view"><?php echo htmlspecialchars($heroButtonText); ?></a>
           <?php endif; ?>
           <?php if (!empty($service['hero_video_url'])): ?>
             <div class="mt-4 d-none d-lg-block"></div>

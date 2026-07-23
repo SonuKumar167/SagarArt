@@ -194,19 +194,12 @@ a {
 
 .hero-section,
 .page-hero {
-  position: relative;
-  overflow: hidden;
-  padding: 2rem 0;
-  min-height: 500px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(59, 130, 246, 0.93));
-  background-size: cover, cover, cover !important;
-  background-repeat: no-repeat !important;
-  background-position: center center !important;
-  background-attachment: scroll;
-  -webkit-background-size: cover;
-  -moz-background-size: cover;
-  background-origin: border-box;
-  background-clip: border-box;
+    width: 100%;
+    min-height: 100vh; /* Full viewport height */
+    background-size: cover;      /* Covers entire section */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat;
+    background-attachment: scroll; /* Better mobile compatibility */
 }
 
 .hero-section::before,
@@ -354,23 +347,27 @@ a {
 @media (max-width: 768px) {
   .hero-section,
   .page-hero {
-    padding: 1.5rem 0 !important;
-    min-height: 520px !important;
-    height: auto !important;
-    background-size: cover, cover, cover !important;
-    background-position: center center !important;
-    background-repeat: no-repeat !important;
+    width: 100%;
+    min-height: 100vh; /* Full viewport height */
+    background-size: cover;      /* Covers entire section */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat;
+    background-attachment: scroll; /* Better mobile compatibility */
   }
   
   .hero-section .container,
   .page-hero .container {
-    min-height: 520px !important;
+    min-height: clamp(480px, 82vh, 620px) !important;
     height: auto !important;
   }
   
   .hero-section .row,
   .page-hero .row {
-    min-height: 520px !important;
+    min-height: clamp(480px, 82vh, 620px) !important;
+  }
+  .mb-view {
+    height: 0px;
+    margin-bottom: 15px;
   }
 }
 
@@ -381,13 +378,13 @@ a {
   }
 
   .hero-section,
-  .page-hero {
-    padding: 1rem 0 !important;
-    min-height: 480px !important;
-    height: auto !important;
-    background-size: cover, cover, cover !important;
-    background-position: center center !important;
-    background-repeat: no-repeat !important;
+  .page-hero {    
+    width: 100%;
+    min-height: 0vh;
+    background-size: contain;
+    background-position: center;
+    background-attachment: scroll;
+    height: 180px;
   }
 
   .hero-section h1,
@@ -397,13 +394,13 @@ a {
   
   .hero-section .container,
   .page-hero .container {
-    min-height: 480px !important;
+    min-height: clamp(440px, 90vh, 560px) !important;
     height: auto !important;
   }
   
   .hero-section .row,
   .page-hero .row {
-    min-height: 480px !important;
+    min-height: clamp(440px, 90vh, 560px) !important;
     height: auto !important;
   }
   
@@ -413,6 +410,11 @@ a {
   .page-hero .col-lg-5 {
     flex: 0 0 100%;
     max-width: 100%;
+  }
+
+  .mb-view {
+    height: 0px;
+    margin-bottom: 15px;
   }
 }
 
