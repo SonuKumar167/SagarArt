@@ -34,7 +34,7 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
       <div class="row align-items-center gy-4">
         <div class="col-lg-7">
           <h1 class="display-5 fw-bold"><?php echo htmlspecialchars($service['hero_title'] ?? $service['title']); ?></h1>
-          <p class="lead"><?php echo htmlspecialchars($service['hero_text'] ?? ''); ?></p>
+          <p><?php echo htmlspecialchars($service['hero_text'] ?? ''); ?></p>
           <?php $heroButtonText = trim($service['button_text'] ?? ''); $heroButtonLink = trim($service['button_link'] ?? ''); ?>
           <?php if ($heroButtonText !== ''): ?>
             <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg mb-view"><?php echo htmlspecialchars($heroButtonText); ?></a>
@@ -153,7 +153,7 @@ $pageDescription = !empty($siteSettings['meta_description']) ? $siteSettings['me
               <div class="col-lg-7">
                 <?php if (!empty($section['title'])): ?><h3 class="mb-0"><?php echo htmlspecialchars($section['title']); ?></h3><?php endif; ?>
                 <?php if (!empty($section['content'])): ?>
-                  <p class="lead mb-2"><?php echo nl2br(htmlspecialchars($section['content'])); ?></p>
+                  <p class="mb-2"><?php echo nl2br(htmlspecialchars($section['content'])); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($section['button_text'])): ?>
                   <a href="<?php echo htmlspecialchars($section['button_link'] ?? '#'); ?>" class="btn btn-primary"><?php echo htmlspecialchars($section['button_text']); ?></a>

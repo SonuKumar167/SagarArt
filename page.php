@@ -55,7 +55,7 @@ if (empty($featuredServices)) {
       <div class="row align-items-center gy-4">
         <div class="col-lg-7">
           <h1 class="display-4 fw-bold"><?php echo htmlspecialchars($page['hero_title'] ?? $page['title']); ?></h1>
-          <p class="lead"><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
+          <p><?php echo htmlspecialchars($page['hero_text'] ?? ''); ?></p>
           <?php $heroButtonText = trim($page['button_text'] ?? ''); $heroButtonLink = trim($page['button_link'] ?? ''); ?>
           <?php if ($heroButtonText !== ''): ?>
             <a href="<?php echo htmlspecialchars($heroButtonLink !== '' ? $heroButtonLink : '#'); ?>" class="btn btn-light btn-lg mb-view"><?php echo htmlspecialchars($heroButtonText); ?></a>
