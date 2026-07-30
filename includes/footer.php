@@ -20,7 +20,7 @@ $footerLinks = getFooterMenuItems($conn);
     <div class="row footer-grid">
       <div class="col-md-4 footer-widget">
         <h5><?php echo htmlspecialchars($siteSettings['site_name'] ?? 'Sagar Art'); ?></h5>
-        <p><?php echo htmlspecialchars($siteSettings['footer_about'] ?? 'We help digital brands grow with premium websites, app experiences, and creative marketing solutions.'); ?></p>
+        <p class="text-white"><?php echo htmlspecialchars($siteSettings['footer_about'] ?? 'We help digital brands grow with premium websites, app experiences, and creative marketing solutions.'); ?></p>
       </div>
       <div class="col-md-4 footer-widget">
         <h5>Quick Links</h5>
@@ -36,9 +36,9 @@ $footerLinks = getFooterMenuItems($conn);
       </div>
       <div class="col-md-4 footer-widget">
         <h5>Contact</h5>
-        <p class="mb-2"><strong>Email:</strong> <?php echo htmlspecialchars($siteSettings['footer_email'] ?? ''); ?></p>
-        <p class="mb-2"><strong>Phone:</strong> <?php echo htmlspecialchars($siteSettings['footer_phone'] ?? ''); ?></p>
-        <p class="mb-0"><strong>Address:</strong> <?php echo htmlspecialchars($siteSettings['footer_address'] ?? ''); ?></p>
+        <p class="mb-2 text-white"><strong>Email:</strong> <?php echo htmlspecialchars($siteSettings['footer_email'] ?? ''); ?></p>
+        <p class="mb-2 text-white"><strong>Phone:</strong> <?php echo htmlspecialchars($siteSettings['footer_phone'] ?? ''); ?></p>
+        <p class="mb-0 text-white"><strong>Address:</strong> <?php echo htmlspecialchars($siteSettings['footer_address'] ?? ''); ?></p>
         <?php $socialLinks = [
           ['label' => 'Facebook', 'url' => $siteSettings['facebook_url'] ?? ''],
           ['label' => 'Instagram', 'url' => $siteSettings['instagram_url'] ?? ''],
